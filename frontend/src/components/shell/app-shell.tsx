@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Wordmark } from "@/components/brand/wordmark";
 import { cn } from "@/lib/utils";
-import { ROLE_LABELS, type Me } from "@/lib/types";
+import { Access } from "@/lib/access";
+import type { Me } from "@/lib/types";
 import { navFor, type NavIcon } from "./nav";
 import { SignOutButton } from "./sign-out-button";
 
@@ -27,7 +28,7 @@ export function AppShell({ me, children }: { me: ActiveMe; children: ReactNode }
   const [menuOpenOn, setMenuOpenOn] = useState<string | null>(null);
   const menuOpen = menuOpenOn === pathname;
   const org = me.active_organisation;
-  const items = navFor(org.permissions);
+  const items = navFor(new Access(org));
 
   const navList = (
     <ul className="flex flex-col gap-0.5">
@@ -56,7 +57,7 @@ export function AppShell({ me, children }: { me: ActiveMe; children: ReactNode }
   const orgBlock = (
     <div className="border-t border-white/10 pt-4">
       <p className="truncate text-sm font-medium text-white">{org.name}</p>
-      <p className="text-[13px] text-sage">{ROLE_LABELS[org.role]}</p>
+      <p className="text-[13px] text-sage">{org.role_label}</p>
       {me.memberships.length > 1 ? (
         <Link
           href="/select-organisation"

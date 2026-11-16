@@ -54,6 +54,23 @@ async def _check_can_handle_role(db: DB, auth: AuthContext, role_id: uuid.UUID) 
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=FORBIDDEN_ROLE)
 
 
+async def _org_member(db: DB, auth: AuthContext, membership_id: uuid.UUID) -> OrganisationUser:
+    member = await db.get(OrganisationUser, membership_id)
+    # The caller's own memberships elsewhere are readable under RLS; they are not "found".
+    if member is None or member.organisation_id != auth.organisation_id:
+        raise not_found("Team member")
+    return member
+
+
+async def get_org_role(db: DB, auth: AuthContext, role_id: uuid.UUID) -> RoleRecord:
+    """A role of the active organisation. Roles the caller holds elsewhere are visible
+    under RLS but must never be used here."""
+    role = await db.get(RoleRecord, role_id)
+    if role is None or role.organisation_id != auth.organisation_id:
+        raise HTTPException(status_code=422, detail="Choose a role.")
+    return role
+
+
 async def _active_owner_count(db: DB, organisation_id: uuid.UUID) -> int:
     """Active members holding the owner role for every property."""
     return int(
@@ -145,7 +162,15 @@ async def _member(db: DB, organisation_id: uuid.UUID, membership_id: uuid.UUID) 
 
 @router.get("/roles", response_model=list[RoleOut])
 async def list_roles(auth: CanViewMembers, db: DB) -> list[RoleOut]:
-    roles = (await db.scalars(select(RoleRecord).order_by(RoleRecord.name))).all()
+    # RLS also lets a user read their own roles in other organisations (for the
+    # organisation picker), so filter to the active organisation explicitly.
+    roles = (
+        await db.scalars(
+            select(RoleRecord)
+            .where(RoleRecord.organisation_id == auth.organisation_id)
+            .order_by(RoleRecord.name)
+        )
+    ).all()
     order = {r.value: i for i, r in enumerate(Role)}
     roles = sorted(roles, key=lambda r: (order.get(r.key or "", 99), r.name))
     return [
@@ -180,12 +205,8 @@ async def add_assignment(
     db: DB,
 ) -> MemberOut:
     assert auth.organisation_id is not None
-    member = await db.get(OrganisationUser, membership_id)
-    if member is None:
-        raise not_found("Team member")
-    role = await db.get(RoleRecord, body.role_id)
-    if role is None:
-        raise HTTPException(status_code=422, detail="Choose a role.")
+    member = await _org_member(db, auth, membership_id)
+    role = await get_org_role(db, auth, body.role_id)
     if body.property_id is not None:
         prop = await db.get(Property, body.property_id)
         if prop is None or prop.status != RecordStatus.ACTIVE:
@@ -235,14 +256,17 @@ async def remove_assignment(
 ) -> MemberOut:
     assert auth.organisation_id is not None
     assignment = await db.get(UserRole, assignment_id)
-    if assignment is None or assignment.membership_id != membership_id:
+    if (
+        assignment is None
+        or assignment.membership_id != membership_id
+        or assignment.organisation_id != auth.organisation_id
+    ):
         raise not_found("Role assignment")
     role = await db.get(RoleRecord, assignment.role_id)
     assert role is not None
     await _check_can_handle_role(db, auth, role.id)
 
-    member = await db.get(OrganisationUser, membership_id)
-    assert member is not None
+    member = await _org_member(db, auth, membership_id)
     if (
         role.key == Role.OWNER
         and assignment.property_id is None
@@ -280,9 +304,7 @@ async def update_member_status(
     db: DB,
 ) -> MemberOut:
     assert auth.organisation_id is not None
-    member = await db.get(OrganisationUser, membership_id)
-    if member is None:
-        raise not_found("Team member")
+    member = await _org_member(db, auth, membership_id)
     if member.id == auth.membership_id:
         raise HTTPException(status_code=422, detail="You cannot change your own access.")
     # The caller must outrank everything the member holds (no disabling an owner as manager).

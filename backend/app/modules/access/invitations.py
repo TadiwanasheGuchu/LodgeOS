@@ -27,7 +27,7 @@ from app.core.security import (
     verify_password,
 )
 from app.modules.access.models import Invitation, RoleRecord, UserRole
-from app.modules.access.router import _check_can_handle_role
+from app.modules.access.router import _check_can_handle_role, get_org_role
 from app.modules.audit import service as audit
 from app.modules.auth.deps import DB, AuthContext, client_ip, require_permission
 from app.modules.auth.models import User
@@ -157,9 +157,7 @@ async def create_invitation(
     body: InvitationCreate, auth: CanManageMembers, request: Request, db: DB
 ) -> InvitationCreated:
     assert auth.organisation_id is not None
-    role = await db.get(RoleRecord, body.role_id)
-    if role is None:
-        raise HTTPException(status_code=422, detail="Choose a role.")
+    role = await get_org_role(db, auth, body.role_id)
     await _check_can_handle_role(db, auth, role.id)
     if body.property_id is not None:
         if role.key == Role.OWNER:

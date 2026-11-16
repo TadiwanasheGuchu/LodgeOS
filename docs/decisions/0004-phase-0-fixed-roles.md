@@ -1,6 +1,6 @@
 # 0004 — Fixed role map in Phase 0
 
-**Status:** Accepted, 2026-11-16 — to be superseded in Phase 1
+**Status:** Superseded by ADR-0006 (Phase 1.3)
 
 ## Context
 `CLAUDE.md` calls for `roles`, `permissions` and `user_roles` tables and property-level permissions. Properties do not exist until Phase 1, so property-level grants cannot be designed yet.

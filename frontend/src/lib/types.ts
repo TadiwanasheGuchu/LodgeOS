@@ -25,7 +25,9 @@ export interface Membership {
   organisation_id: string;
   organisation_name: string;
   organisation_slug: string;
-  role: Role;
+  /** Highest system role key, or "" when only custom roles are held. */
+  role: Role | "";
+  role_label: string;
 }
 
 export interface Me {
@@ -35,8 +37,12 @@ export interface Me {
     id: string;
     name: string;
     slug: string;
-    role: Role;
+    role: Role | "";
+    role_label: string;
+    /** Granted for every property. */
     permissions: Permission[];
+    /** Granted for specific properties only. */
+    property_permissions: Record<string, Permission[]>;
   } | null;
 }
 
@@ -51,14 +57,56 @@ export interface Organisation {
   created_at: string;
 }
 
+export interface Assignment {
+  id: string;
+  role_id: string;
+  role_key: string | null;
+  role_name: string;
+  property_id: string | null;
+  property_name: string | null;
+}
+
 export interface Member {
   id: string;
   user_id: string;
   full_name: string;
   email: string;
-  role: Role;
+  role: Role | "";
+  role_label: string;
   status: "active" | "disabled";
   created_at: string;
+  assignments: Assignment[];
+}
+
+export interface RoleDefinition {
+  id: string;
+  key: string | null;
+  name: string;
+  description: string | null;
+  is_system: boolean;
+  permissions: Permission[];
+}
+
+export interface Invitation {
+  id: string;
+  email: string;
+  full_name: string;
+  role_id: string;
+  role_name: string;
+  property_id: string | null;
+  property_name: string | null;
+  state: "pending" | "accepted" | "revoked" | "expired";
+  expires_at: string;
+  created_at: string;
+}
+
+export interface InvitationPreview {
+  organisation_name: string;
+  email: string;
+  full_name: string;
+  role_name: string;
+  property_name: string | null;
+  has_account: boolean;
 }
 
 export interface AuditLogEntry {

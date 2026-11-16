@@ -1,9 +1,18 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { seed, signedIn } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 
 const propertyName = `Waterberg Lodge ${seed.run}`;
+
+/** Opens the room board on this test's property, whether or not other properties exist. */
+async function openBoard(page: Page) {
+  await page.goto("/rooms");
+  const switcher = page.getByRole("navigation", { name: "Property" }).getByRole("link", { name: propertyName });
+  if (await switcher.count()) await switcher.click();
+  else await expect(page.getByText(propertyName)).toBeVisible();
+  await expect(page.getByRole("group", { name: "Room 1 cleaning status" }).or(page.getByRole("button", { name: "Maintenance for room 1" }))).toBeVisible();
+}
 
 test("owner sets up a property, a room type and a range of rooms", async ({ page }) => {
   await signedIn(page, seed.owner);
@@ -50,9 +59,7 @@ test("owner sets up a property, a room type and a range of rooms", async ({ page
 test("housekeeping marks a room clean from a phone-sized screen", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await signedIn(page, seed.housekeeping);
-  await page.goto("/rooms");
-  // One property: no switcher, the property name is shown under the heading.
-  await expect(page.getByText(propertyName)).toBeVisible();
+  await openBoard(page);
 
   const room = page.getByRole("group", { name: "Room 3 cleaning status" });
   await expect(room.getByRole("button", { name: "Dirty" })).toHaveAttribute("aria-pressed", "true");
@@ -64,7 +71,7 @@ test("housekeeping marks a room clean from a phone-sized screen", async ({ page 
 
   // The change survives a reload, so it was saved.
   await page.reload();
-  await page.getByRole("button", { name: "Clean" }).first().waitFor();
+  await expect(page.getByRole("group", { name: "Room 3 cleaning status" }).getByRole("button", { name: "Clean" })).toHaveAttribute("aria-pressed", "true");
   const filter = page.getByRole("group", { name: "Filter rooms" });
   await expect(filter.getByRole("button", { name: /Clean/ })).toContainText("1");
 
@@ -74,8 +81,7 @@ test("housekeeping marks a room clean from a phone-sized screen", async ({ page 
 
 test("maintenance takes a room out of order with a reason, then fixes it", async ({ page }) => {
   await signedIn(page, seed.maintenance);
-  await page.goto("/rooms");
-  await expect(page.getByText(propertyName)).toBeVisible();
+  await openBoard(page);
 
   await page.getByRole("button", { name: "Maintenance for room 5" }).click();
   const dialog = page.getByRole("dialog", { name: "Room 5 maintenance" });

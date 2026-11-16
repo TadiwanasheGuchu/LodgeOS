@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Alert } from "@/components/ui/alert";
+import { accessOf } from "@/lib/access";
 import { apiGet, requireOrganisation } from "@/lib/server/api";
 import type { PropertySummary, Room } from "@/lib/types";
 import { RoomBoard } from "./room-board";
@@ -11,17 +12,20 @@ export const metadata: Metadata = { title: "Room status" };
 
 export default async function RoomsPage({ searchParams }: PageProps<"/rooms">) {
   const me = await requireOrganisation();
-  const perms = me.active_organisation.permissions;
-  if (!perms.includes("rooms.view")) redirect("/");
+  const access = accessOf(me);
+  if (!access.canAnywhere("rooms.view")) redirect("/");
 
-  const properties = await apiGet<PropertySummary[]>("/api/v1/properties");
+  // Only properties where this person may see rooms.
+  const properties = (await apiGet<PropertySummary[]>("/api/v1/properties")).filter((p) =>
+    access.canAt("rooms.view", p.id),
+  );
   if (properties.length === 0) {
     return (
       <>
         <PageHeader title="Room status" />
         <Alert tone="info">
           No properties yet.{" "}
-          {perms.includes("properties.manage") ? (
+          {access.can("properties.manage") ? (
             <Link href="/properties/new" className="font-medium underline underline-offset-2">
               Add your first property
             </Link>
@@ -62,7 +66,7 @@ export default async function RoomsPage({ searchParams }: PageProps<"/rooms">) {
       {rooms.length === 0 ? (
         <Alert tone="info">
           {current.name} has no rooms yet.{" "}
-          {perms.includes("rooms.manage") ? (
+          {access.canAt("rooms.manage", current.id) ? (
             <Link href={`/properties/${current.id}/rooms`} className="font-medium underline underline-offset-2">
               Add rooms
             </Link>
@@ -73,8 +77,8 @@ export default async function RoomsPage({ searchParams }: PageProps<"/rooms">) {
           key={current.id}
           rooms={rooms}
           timeZone={current.timezone}
-          canHousekeep={perms.includes("rooms.housekeeping_update")}
-          canMaintain={perms.includes("rooms.maintenance_update")}
+          canHousekeep={access.canAt("rooms.housekeeping_update", current.id)}
+          canMaintain={access.canAt("rooms.maintenance_update", current.id)}
         />
       )}
     </>

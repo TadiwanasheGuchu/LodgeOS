@@ -240,3 +240,82 @@ async def test_role_changes_are_audited(client, factory) -> None:
         i["action"] for i in (await client.get("/api/v1/organisation/audit-logs")).json()["items"]
     ]
     assert "member.role_added" in actions and "member.disabled" in actions
+
+
+async def test_roles_from_other_organisations_are_never_listed_or_usable(client, factory) -> None:
+    """Regression: the own-assignments RLS policy made a user's roles in another
+    organisation visible; they must not appear in, or be accepted by, this one."""
+    home = await factory.organisation("Home")
+    elsewhere = await factory.organisation("Elsewhere")
+    mgr = await factory.user()
+    await factory.member(home, mgr, Role.MANAGER)
+    await factory.member(elsewhere, mgr, Role.OWNER)
+    staff = await factory.user()
+    staff_m = await factory.member(home, staff, Role.HOUSEKEEPING)
+
+    me = (await login(client, mgr.email)).json()
+    home_id = next(
+        m["organisation_id"] for m in me["memberships"] if m["organisation_name"] == "Home"
+    )
+    await _post(client, "/api/v1/auth/active-organisation", {"organisation_id": home_id})
+
+    roles = (await client.get("/api/v1/roles")).json()
+    assert [r["name"] for r in roles] == [
+        "Owner",
+        "Manager",
+        "Receptionist",
+        "Housekeeping",
+        "Maintenance",
+        "Accountant",
+    ]
+    assert all(r["permissions"] for r in roles)
+
+    async with factory.engine.connect() as conn:
+        foreign_owner = (
+            await conn.execute(
+                text("SELECT id FROM roles WHERE organisation_id = :o AND key = 'owner'"),
+                {"o": elsewhere.id},
+            )
+        ).scalar_one()
+    r = await _post(client, f"/api/v1/members/{staff_m.id}/roles", {"role_id": str(foreign_owner)})
+    assert r.status_code == 422
+    r = await _post(
+        client,
+        "/api/v1/invitations",
+        {"email": "z@example.com", "full_name": "Z", "role_id": str(foreign_owner)},
+    )
+    assert r.status_code == 422
+
+
+async def test_own_rows_in_other_organisations_are_not_found(client, factory) -> None:
+    """A user's membership and role assignment in another organisation are readable under
+    RLS, but endpoints acting on the active organisation must treat them as not found."""
+    home = await factory.organisation("Home")
+    elsewhere = await factory.organisation("Elsewhere")
+    mgr = await factory.user()
+    await factory.member(home, mgr, Role.OWNER)
+    other_m = await factory.member(elsewhere, mgr, Role.HOUSEKEEPING)
+    me = (await login(client, mgr.email)).json()
+    home_id = next(
+        m["organisation_id"] for m in me["memberships"] if m["organisation_name"] == "Home"
+    )
+    await _post(client, "/api/v1/auth/active-organisation", {"organisation_id": home_id})
+    async with factory.engine.connect() as conn:
+        other_assignment = (
+            await conn.execute(
+                text("SELECT id FROM user_roles WHERE membership_id = :m"), {"m": other_m.id}
+            )
+        ).scalar_one()
+
+    headers = await csrf(client)
+    r = await client.patch(
+        f"/api/v1/members/{other_m.id}", json={"status": "disabled"}, headers=headers
+    )
+    assert r.status_code == 404
+    r = await client.delete(
+        f"/api/v1/members/{other_m.id}/roles/{other_assignment}", headers=headers
+    )
+    assert r.status_code == 404
+    roles = {r["key"]: r["id"] for r in (await client.get("/api/v1/roles")).json()}
+    r = await _post(client, f"/api/v1/members/{other_m.id}/roles", {"role_id": roles["manager"]})
+    assert r.status_code == 404

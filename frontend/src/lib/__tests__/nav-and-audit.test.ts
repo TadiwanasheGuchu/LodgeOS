@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { navFor } from "@/components/shell/nav";
+import { Access } from "@/lib/access";
 import { describeAction, describeChanges } from "@/lib/audit";
-import type { AuditLogEntry } from "@/lib/types";
+import type { AuditLogEntry, Permission } from "@/lib/types";
 
 describe("navFor", () => {
   it("shows only screens the role may open", () => {
-    expect(navFor(["organisation.view"]).map((i) => i.href)).toEqual(["/", "/settings"]);
-    expect(navFor(["organisation.view", "members.view", "audit.view"]).map((i) => i.href)).toEqual([
+    const only = (permissions: Permission[], property_permissions: Record<string, Permission[]> = {}) =>
+      navFor(new Access({ permissions, property_permissions })).map((i) => i.href);
+    expect(only(["organisation.view"])).toEqual(["/", "/settings"]);
+    // A role at one property is enough to see the screen.
+    expect(only(["organisation.view"], { A: ["rooms.view", "properties.view"] })).toEqual([
+      "/",
+      "/rooms",
+      "/properties",
+      "/settings",
+    ]);
+    expect(only(["organisation.view", "members.view", "audit.view"])).toEqual([
       "/",
       "/team",
       "/activity",

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
+import { accessOf } from "@/lib/access";
 import { apiGet, requireOrganisation } from "@/lib/server/api";
 import { COUNTRIES, CURRENCIES } from "@/lib/reference-data";
 import type { Organisation } from "@/lib/types";
@@ -10,7 +11,7 @@ export const metadata: Metadata = { title: "Organisation" };
 export default async function SettingsPage() {
   const me = await requireOrganisation();
   const org = await apiGet<Organisation>("/api/v1/organisation");
-  const canManage = me.active_organisation.permissions.includes("organisation.manage");
+  const canManage = accessOf(me).can("organisation.manage");
 
   return (
     <>

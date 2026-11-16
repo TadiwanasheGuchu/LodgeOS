@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { PropertyTabs } from "@/components/properties/property-tabs";
+import { accessOf } from "@/lib/access";
 import { requireOrganisation } from "@/lib/server/api";
 import { loadProperty } from "@/lib/server/properties";
 import { PROPERTY_TYPE_LABELS } from "@/lib/types";
 
 export default async function PropertyLayout({ children, params }: LayoutProps<"/properties/[id]">) {
   const me = await requireOrganisation();
-  if (!me.active_organisation.permissions.includes("properties.view")) redirect("/");
+  if (!accessOf(me).canAnywhere("properties.view")) redirect("/");
   const { id } = await params;
   const property = await loadProperty(id);
   return (

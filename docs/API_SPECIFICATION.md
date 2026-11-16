@@ -59,7 +59,25 @@ The authoritative, always-current schema is the OpenAPI document served by the A
 
 IDs belonging to another organisation return 404, exactly like IDs that do not exist.
 
+## Endpoints (Phase 1.3)
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| GET | `/api/v1/roles` | `members.view` | Roles of the active organisation with their permissions |
+| GET | `/api/v1/organisation/members` | `members.view` | Members with `role_label`, `status` and `assignments` (role and property) |
+| POST | `/api/v1/members/{id}/roles` | `members.manage` | `{role_id, property_id?}`; 403 beyond your own permissions; 409 if already held; owner cannot be limited to a property |
+| DELETE | `/api/v1/members/{id}/roles/{assignment_id}` | `members.manage` | 409 if it would leave no active owner |
+| PATCH | `/api/v1/members/{id}` | `members.manage` | `{status: active\|disabled}`; not yourself; not someone holding more than you |
+| GET / POST | `/api/v1/invitations` | view / manage | Create returns `token` once; a new invitation replaces a pending one for the same email |
+| POST | `/api/v1/invitations/{id}/revoke` | `members.manage` | |
+| GET | `/api/v1/invitations/token/{token}` | public, rate limited | Preview: organisation, role, property, whether the email already has an account. 404 unknown, 410 used/withdrawn/expired |
+| POST | `/api/v1/invitations/accept` | public, CSRF, rate limited | `{token, password, full_name?}`; existing accounts must give their own password; signs the person in |
+
+`GET /api/v1/auth/me` now returns `active_organisation.role_label`, `permissions` (granted for every property) and `property_permissions` (`{property_id: [...]}`); memberships carry `role_label`.
+
 ## Role permissions
+
+Defaults of the six system roles (organisation-wide grants). A role granted for one property applies its `properties.*` and `rooms.*` permissions to that property only.
 
 | Permission | owner | manager | receptionist | housekeeping | maintenance | accountant |
 |---|---|---|---|---|---|---|
