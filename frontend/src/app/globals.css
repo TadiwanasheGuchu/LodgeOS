@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+/*
+ * LodgeOS design tokens. Rules and measured contrast: docs/DESIGN_SYSTEM.md.
+ * No brown of any kind (CLAUDE.md §10).
+ */
+@theme {
+  --color-forest: #123c35;
+  --color-teal: #24796d;
+  --color-sage: #75a99d; /* decoration on light surfaces only; fails contrast as text */
+  --color-mist: #e5f2ef;
+  --color-cloud: #f7f9f8;
+  --color-white: #ffffff;
+  --color-charcoal: #263a36;
+
+  /* Dividers and table rules only (1.36:1, decorative). */
+  --color-line: #d3e0dc;
+  /* Borders of inputs and other controls: 3.77:1 on white and 3.57:1 on cloud, meets the 3:1 non-text rule. */
+  --color-control: #728883;
+  /* Muted text: 6.55:1 on white, 6.2:1 on cloud, 5.7:1 on mist. */
+  --color-muted: #4b625d;
+
+  /* Status colours. Always paired with an icon or label. */
+  --color-danger: #b42318;
+  --color-danger-tint: #fdecea;
+  --color-success: #1d6b5f;
+  --color-success-tint: #e3f3ef;
+
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  body {
+    background-color: var(--color-cloud);
+    color: var(--color-charcoal);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01";
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-teal);
+    outline-offset: 2px;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}

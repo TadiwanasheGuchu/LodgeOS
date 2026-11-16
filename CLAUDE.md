@@ -610,6 +610,8 @@ Never expose production credentials.
 
 Do not deploy to production without explicit approval.
 
+Do not add AI attribution to contributions: no `Co-Authored-By` or `Claude-Session` trailers in commit messages, and no "Generated with" lines in pull request descriptions.
+
 # 17. Definition of Done
 
 A module is complete only when:
