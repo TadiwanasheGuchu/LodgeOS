@@ -5,6 +5,12 @@ All notable changes are recorded here. Format based on [Keep a Changelog](https:
 ## [Unreleased]
 
 ### Added
+- Properties with their own timezone, currency, address and check-in/check-out times; buildings; room types with occupancy limits; physical rooms. Archive instead of delete.
+- Database-level integrity: composite foreign keys keep buildings, room types and rooms within one property and one organisation; RLS on all four tables.
+- Room status board (`/rooms`): one-tap Dirty / Clean / Inspected for housekeeping, and out-of-service / out-of-order with a required reason for maintenance, each behind its own permission.
+- Property setup screens: details, room types, rooms (bulk add with ranges such as `101-110, A1-A4`), buildings.
+- Installable web app: manifest, app icons ("L." mark in Fraunces) and a maskable icon.
+- Warning colour tokens and a warning alert style.
 - Frontend (Next.js 16, React 19, Tailwind 4): Forest & Teal design tokens with measured contrast, Fraunces / DM Sans / IBM Plex Mono, sign-in, organisation picker, role-aware app shell (sidebar on desktop, menu on phones), overview, organisation settings (editable by owners, read-only for others), team list, activity log with pagination.
 - Nonce-based Content-Security-Policy and security headers on every page.
 - Frontend tests: Vitest unit and component tests; Playwright end-to-end tests against the real API, including a phone viewport.

@@ -45,12 +45,14 @@ The non-negotiable rules live in `CLAUDE.md` §10. This document turns them into
 | `danger-tint` | `#FDECEA` | Error panel background | — |
 | `success` | `#1D6B5F` | Confirmations, "active" | 5.52 on `success-tint` |
 | `success-tint` | `#E3F3EF` | Success panel background | — |
+| `warning` | `#FACC15` | Warning fills and panel borders only (clean yellow, not amber) | 1.53 on white: never text or a meaningful border; forest on it 7.96 |
+| `warning-tint` | `#FEF7C3` | Warning panel background | charcoal text 11.09 |
 
 ### Status colours
 
 Hospitality states (confirmed, checked-in, dirty, out of order, overdue) must not use brown, orange-brown, amber-brown or any earth tone (`CLAUDE.md` §10).
 - Every status pairs a colour with an icon or text label; colour alone never carries meaning.
-- Error and success are defined above. A warning colour is still to be chosen; it must be a clean yellow that does not read as amber-brown, with measured contrast, before any screen uses it.
+- Error, success and warning are defined above. Warning text is always charcoal; the yellow is a fill, never a text colour.
 
 ## Components (milestone 0.3)
 
@@ -65,6 +67,10 @@ Hospitality states (confirmed, checked-in, dirty, out of order, overdue) must no
 | IBM Plex Mono | Reservation references, invoice numbers, amounts in tables, IDs |
 
 Operational screens keep headings small (a receptionist needs the arrivals list, not a hero banner). Amounts use tabular figures so columns line up.
+
+## App icon and PWA
+
+The app icon is a white Fraunces "L" with a sage dot on forest (`frontend/public/icon-*.png`, `src/app/icon.png`, `src/app/apple-icon.png`). The maskable variant keeps the mark inside the central safe zone. The web app manifest (`src/app/manifest.ts`) makes LodgeOS installable. There is no service worker or offline mode yet; offline housekeeping is planned with the housekeeping module.
 
 ## Icons
 

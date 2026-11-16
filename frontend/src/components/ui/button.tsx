@@ -46,8 +46,15 @@ export function Button({
       aria-busy={loading || undefined}
       {...props}
     >
-      {loading ? <Loader2 className="animate-spin" aria-hidden /> : null}
-      {children}
+      {asChild ? (
+        // Slot needs exactly one child element; a link-styled button has no loading state.
+        children
+      ) : (
+        <>
+          {loading ? <Loader2 className="animate-spin" aria-hidden /> : null}
+          {children}
+        </>
+      )}
     </Comp>
   );
 }

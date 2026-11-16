@@ -3,5 +3,17 @@
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import User, UserSession
 from app.modules.organisations.models import Organisation, OrganisationUser
+from app.modules.properties.models import Building, Property
+from app.modules.rooms.models import Room, RoomType
 
-__all__ = ["AuditLog", "Organisation", "OrganisationUser", "User", "UserSession"]
+__all__ = [
+    "AuditLog",
+    "Building",
+    "Organisation",
+    "OrganisationUser",
+    "Property",
+    "Room",
+    "RoomType",
+    "User",
+    "UserSession",
+]

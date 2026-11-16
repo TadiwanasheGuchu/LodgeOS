@@ -7,10 +7,28 @@ const LABELS: Record<string, string> = {
   "organisation.updated": "Changed organisation details",
   "organisation.bootstrapped": "Organisation created",
   "member.added": "Added a team member",
+  "property.created": "Added a property",
+  "property.updated": "Changed property details",
+  "building.created": "Added a building",
+  "building.updated": "Changed a building",
+  "room_type.created": "Added a room type",
+  "room_type.updated": "Changed a room type",
+  "room.created": "Added a room",
+  "room.bulk_created": "Added rooms",
+  "room.updated": "Changed a room",
+  "room.housekeeping_changed": "Changed room cleaning status",
+  "room.maintenance_changed": "Changed room maintenance status",
 };
 
 const FIELD_LABELS: Record<string, string> = {
   name: "Name",
+  status: "Status",
+  timezone: "Timezone",
+  currency: "Currency",
+  check_in_time: "Check-in from",
+  check_out_time: "Check-out by",
+  number: "Number",
+  floor: "Floor",
   default_currency: "Currency",
   default_timezone: "Timezone",
   country_code: "Country",
@@ -21,8 +39,25 @@ export function describeAction(entry: AuditLogEntry): string {
 }
 
 /** "Currency: NAD → ZAR" lines for an organisation.updated entry. */
+const STATUS_WORDS: Record<string, string> = {
+  dirty: "dirty",
+  clean: "clean",
+  inspected: "inspected",
+  none: "no issue",
+  out_of_service: "out of service",
+  out_of_order: "out of order",
+};
+
 export function describeChanges(entry: AuditLogEntry): string[] {
-  if (entry.action !== "organisation.updated") return [];
+  const d = entry.data as Record<string, unknown>;
+  if (entry.action === "room.housekeeping_changed" || entry.action === "room.maintenance_changed") {
+    const line = `Room ${String(d.number)}: ${STATUS_WORDS[String(d.from)] ?? d.from} → ${STATUS_WORDS[String(d.to)] ?? d.to}`;
+    return d.reason ? [line, `Reason: ${String(d.reason)}`] : [line];
+  }
+  if (entry.action === "room.bulk_created" && Array.isArray(d.numbers)) {
+    return [`Rooms ${(d.numbers as string[]).join(", ")}`];
+  }
+  if (!entry.action.endsWith(".updated")) return [];
   const before = (entry.data.before ?? {}) as Record<string, unknown>;
   const after = (entry.data.after ?? {}) as Record<string, unknown>;
   return Object.keys(after)

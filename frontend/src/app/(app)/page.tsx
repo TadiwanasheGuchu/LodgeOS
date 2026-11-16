@@ -10,6 +10,18 @@ export const metadata: Metadata = { title: "Overview" };
 
 const links: { href: string; title: string; text: string; permission?: Permission }[] = [
   {
+    href: "/rooms",
+    title: "Room status",
+    text: "Which rooms are dirty, clean or inspected, and which have a maintenance problem.",
+    permission: "rooms.view",
+  },
+  {
+    href: "/properties",
+    title: "Properties",
+    text: "Check-in times, room types, rooms and buildings for each property.",
+    permission: "properties.view",
+  },
+  {
     href: "/settings",
     title: "Organisation details",
     text: "Name, currency, timezone and country used across your properties.",
@@ -53,7 +65,7 @@ export default async function OverviewPage() {
               ))}
           </ul>
           <p className="border-t border-line bg-cloud px-5 py-3 text-[13px] text-muted">
-            Property setup, rooms and reservations are being built next. This page will show today&apos;s arrivals and
+            Reservations and the booking calendar are being built next. This page will show today&apos;s arrivals and
             departures once they are available.
           </p>
         </section>

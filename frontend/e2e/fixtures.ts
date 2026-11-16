@@ -9,6 +9,8 @@ export const seed = JSON.parse(readFileSync(path.join(__dirname, ".run.json"), "
   owner: string;
   receptionist: string;
   multi: string;
+  housekeeping: string;
+  maintenance: string;
   lodgeName: string;
   campName: string;
 };

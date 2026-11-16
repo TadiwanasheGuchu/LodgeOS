@@ -32,3 +32,23 @@ async def record(
         )
     )
     await db.flush()
+
+
+def _json_safe(value: Any) -> Any:
+    if value is None or isinstance(value, str | int | float | bool):
+        return value
+    return str(value)  # UUIDs, times, dates, enums
+
+
+def apply_changes(entity: object, changes: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Set ``changes`` on ``entity`` and return {"before": ..., "after": ...} for the
+    fields that actually changed, ready for an audit record."""
+    before: dict[str, Any] = {}
+    after: dict[str, Any] = {}
+    for key, value in changes.items():
+        old = getattr(entity, key)
+        if old != value:
+            before[key] = _json_safe(old)
+            after[key] = _json_safe(value)
+            setattr(entity, key, value)
+    return {"before": before, "after": after}

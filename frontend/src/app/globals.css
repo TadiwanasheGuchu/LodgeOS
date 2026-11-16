@@ -25,6 +25,10 @@
   --color-danger-tint: #fdecea;
   --color-success: #1d6b5f;
   --color-success-tint: #e3f3ef;
+  /* Warning: clean yellow, never amber or brown. Too light for text or borders on white
+     (1.53:1), so it is only a fill; warning text is charcoal on warning-tint (11.09:1). */
+  --color-warning: #facc15;
+  --color-warning-tint: #fef7c3;
 
   --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
