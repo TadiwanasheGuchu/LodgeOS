@@ -38,6 +38,21 @@ def _set_csrf_cookie(response: Response) -> str:
     return token
 
 
+def set_session_cookies(response: Response, token: str) -> None:
+    settings = get_settings()
+    response.set_cookie(
+        settings.session_cookie_name,
+        token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite="lax",
+        domain=settings.cookie_domain,
+        path="/",
+        max_age=settings.session_absolute_timeout_hours * 3600,
+    )
+    _set_csrf_cookie(response)  # rotate on sign-in
+
+
 @router.get("/csrf", status_code=status.HTTP_204_NO_CONTENT)
 async def issue_csrf(response: Response) -> None:
     """Issue a CSRF cookie. Call before the first state-changing request."""
@@ -46,7 +61,6 @@ async def issue_csrf(response: Response) -> None:
 
 @router.post("/login", response_model=MeResponse)
 async def login(body: LoginRequest, request: Request, response: Response, db: DB) -> MeResponse:
-    settings = get_settings()
     try:
         token, user, session = await service.login(
             db,
@@ -68,18 +82,8 @@ async def login(body: LoginRequest, request: Request, response: Response, db: DB
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Email or password is incorrect."
         ) from None
 
-    response.set_cookie(
-        settings.session_cookie_name,
-        token,
-        httponly=True,
-        secure=settings.cookie_secure,
-        samesite="lax",
-        domain=settings.cookie_domain,
-        path="/",
-        max_age=settings.session_absolute_timeout_hours * 3600,
-    )
-    _set_csrf_cookie(response)  # rotate on sign-in
-    return await _me(db, user, session.active_organisation_id)
+    set_session_cookies(response, token)
+    return await build_me(db, user, session.active_organisation_id)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -100,7 +104,7 @@ async def logout(auth: Auth, request: Request, response: Response, db: DB) -> No
 
 @router.get("/me", response_model=MeResponse)
 async def me(auth: Auth, db: DB) -> MeResponse:
-    return await _me(db, auth.user, auth.organisation_id)
+    return await build_me(db, auth.user, auth.organisation_id)
 
 
 @router.post("/active-organisation", response_model=MeResponse)
@@ -125,10 +129,10 @@ async def switch_organisation(
         entity_id=auth.session.id,
         ip_address=client_ip(request),
     )
-    return await _me(db, auth.user, match.organisation_id)
+    return await build_me(db, auth.user, match.organisation_id)
 
 
-async def _me(db: DB, user: User, org_id: uuid.UUID | None) -> MeResponse:
+async def build_me(db: DB, user: User, org_id: uuid.UUID | None) -> MeResponse:
     memberships = await service.list_memberships(db, user.id)
     active = None
     if org_id is not None:

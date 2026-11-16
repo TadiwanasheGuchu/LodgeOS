@@ -17,10 +17,12 @@ from sqlalchemy import (
     ForeignKey,
     ForeignKeyConstraint,
     Index,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -116,3 +118,51 @@ class UserRole(Base):
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT")
     )
+
+
+class Invitation(Base):
+    """A one-time invitation to join an organisation with a role.
+
+    The link carries a random token; only its SHA-256 is stored. Before sign-in there is no
+    tenant context, so the token is resolved through the SECURITY DEFINER function
+    ``invitation_for_token``, which returns only the invitation and organisation ids.
+    """
+
+    __tablename__ = "invitations"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["role_id", "organisation_id"],
+            ["roles.id", "roles.organisation_id"],
+            name="fk_invitations_role_same_org",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["property_id", "organisation_id"],
+            ["properties.id", "properties.organisation_id"],
+            name="fk_invitations_property_same_org",
+            ondelete="RESTRICT",
+        ),
+        Index("ix_invitations_org_email", "organisation_id", func.lower(text("email"))),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
+    organisation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("organisations.id", ondelete="RESTRICT"), nullable=False
+    )
+    email: Mapped[str] = mapped_column(String(320), nullable=False)
+    full_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    role_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    property_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    token_hash: Mapped[bytes] = mapped_column(LargeBinary(32), nullable=False, unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    accepted_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT")
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

@@ -114,6 +114,30 @@ async def login(
     # With exactly one organisation, start there. Otherwise the user picks one.
     active_org = memberships[0].organisation_id if len(memberships) == 1 else None
 
+    token, session = await open_session(db, user, active_org, ip, user_agent)
+
+    await set_tenant_context(db, user_id=user.id, organisation_id=active_org)
+    await audit.record(
+        db,
+        action="auth.login",
+        organisation_id=active_org,
+        actor_user_id=user.id,
+        entity_type="user_session",
+        entity_id=session.id,
+        ip_address=ip,
+    )
+    return token, user, session
+
+
+async def open_session(
+    db: AsyncSession,
+    user: User,
+    active_org: uuid.UUID | None,
+    ip: str | None,
+    user_agent: str | None,
+) -> tuple[str, UserSession]:
+    """Create a server-side session. Returns the raw token for the cookie."""
+    settings = get_settings()
     token = new_token()
     now = utcnow()
     session = UserSession(
@@ -128,18 +152,7 @@ async def login(
     )
     db.add(session)
     await db.flush()
-
-    await set_tenant_context(db, user_id=user.id, organisation_id=active_org)
-    await audit.record(
-        db,
-        action="auth.login",
-        organisation_id=active_org,
-        actor_user_id=user.id,
-        entity_type="user_session",
-        entity_id=session.id,
-        ip_address=ip,
-    )
-    return token, user, session
+    return token, session
 
 
 async def resolve_session(db: AsyncSession, token: str) -> tuple[UserSession, User] | None:
