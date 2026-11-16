@@ -44,6 +44,7 @@ from app.modules.organisations.models import Organisation, OrganisationUser, Rol
 
 PASSWORD = "correct horse battery staple"
 _TABLES = (
+    "seasonal_rates, rate_plan_prices, rate_plans, taxes, "
     "user_roles, role_permissions, roles, "
     "rooms, room_types, buildings, properties, "
     "audit_logs, user_sessions, organisation_users, users, organisations"

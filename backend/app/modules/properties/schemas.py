@@ -57,6 +57,15 @@ class PropertyUpdate(_PropertyFields):
     country_code: Country | None = None
     check_in_time: time | None = None
     check_out_time: time | None = None
+    # ISO weekdays of nights that use weekend prices (1 = Monday ... 7 = Sunday).
+    weekend_nights: list[Annotated[int, Field(ge=1, le=7)]] | None = Field(
+        default=None, max_length=7
+    )
+
+    @field_validator("weekend_nights")
+    @classmethod
+    def _unique_sorted(cls, v: list[int] | None) -> list[int] | None:
+        return sorted(set(v)) if v is not None else None
 
     @field_validator("timezone")
     @classmethod
@@ -84,6 +93,7 @@ class PropertyOut(BaseModel):
     email: str | None
     check_in_time: time
     check_out_time: time
+    weekend_nights: list[int]
     created_at: datetime
 
 

@@ -11,6 +11,7 @@ from app.modules.audit.models import AuditLog
 from app.modules.auth.models import User, UserSession
 from app.modules.organisations.models import Organisation, OrganisationUser
 from app.modules.properties.models import Building, Property
+from app.modules.rates.models import RatePlan, RatePlanPrice, SeasonalRate, Tax
 from app.modules.rooms.models import Room, RoomType
 
 __all__ = [
@@ -21,10 +22,14 @@ __all__ = [
     "OrganisationUser",
     "PermissionRecord",
     "Property",
+    "RatePlan",
+    "RatePlanPrice",
     "RolePermission",
     "RoleRecord",
     "Room",
     "RoomType",
+    "SeasonalRate",
+    "Tax",
     "User",
     "UserRole",
     "UserSession",
