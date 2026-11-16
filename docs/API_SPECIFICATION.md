@@ -39,7 +39,27 @@ The authoritative, always-current schema is the OpenAPI document served by the A
 | GET | `/api/v1/organisation/members` | `members.view` | Staff of the current organisation |
 | GET | `/api/v1/organisation/audit-logs` | `audit.view` | Newest first; `cursor`, `limit` (1–200); each item includes `actor_name` |
 
-## Role permissions (Phase 0)
+## Endpoints (Phase 1.1–1.2)
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| GET | `/api/v1/properties` | `properties.view` | Active properties with room and room-type counts; `include_archived` |
+| POST | `/api/v1/properties` | `properties.manage` | Create; timezone/currency/country default from the organisation; 409 on slug clash |
+| GET / PATCH | `/api/v1/properties/{id}` | view / manage | Read or update (including `status: archived`) |
+| GET / POST | `/api/v1/properties/{id}/buildings` | view / manage | |
+| PATCH | `/api/v1/buildings/{id}` | `properties.manage` | Rename, reorder, archive |
+| GET / POST | `/api/v1/properties/{id}/room-types` | `rooms.view` / `rooms.manage` | List includes `room_count` |
+| PATCH | `/api/v1/room-types/{id}` | `rooms.manage` | Occupancy re-validated against stored values; 409 when archiving a type with active rooms |
+| GET | `/api/v1/properties/{id}/rooms` | `rooms.view` | Includes type and building names; `include_archived` |
+| POST | `/api/v1/properties/{id}/rooms` | `rooms.manage` | One room |
+| POST | `/api/v1/properties/{id}/rooms/bulk` | `rooms.manage` | `{numbers[], room_type_id, building_id?, floor?}`; all or nothing; 409 lists existing numbers |
+| PATCH | `/api/v1/rooms/{id}` | `rooms.manage` | Number, type, building, floor, notes, status |
+| POST | `/api/v1/rooms/{id}/housekeeping` | `rooms.housekeeping_update` | `{housekeeping_status}` |
+| POST | `/api/v1/rooms/{id}/maintenance` | `rooms.maintenance_update` | `{maintenance_status, reason}`; reason required unless `none` |
+
+IDs belonging to another organisation return 404, exactly like IDs that do not exist.
+
+## Role permissions
 
 | Permission | owner | manager | receptionist | housekeeping | maintenance | accountant |
 |---|---|---|---|---|---|---|
@@ -48,3 +68,9 @@ The authoritative, always-current schema is the OpenAPI document served by the A
 | members.view | ✓ | ✓ | | | | |
 | members.manage | ✓ | ✓ | | | | |
 | audit.view | ✓ | ✓ | | | | ✓ |
+| properties.view | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| properties.manage | ✓ | ✓ | | | | |
+| rooms.view | ✓ | ✓ | ✓ | ✓ | ✓ | |
+| rooms.manage | ✓ | ✓ | | | | |
+| rooms.housekeeping_update | ✓ | ✓ | ✓ | ✓ | | |
+| rooms.maintenance_update | ✓ | ✓ | | | ✓ | |

@@ -2,56 +2,51 @@
 
 _Last updated: 2026-11-16_
 
-**Current phase:** 0 — Foundation
-**Current milestone:** Phase 0 complete; Phase 1 (property management) in progress
+**Current phase:** 1 — Property management
+**Current milestone:** 1.2 complete; next is 1.3 (staff and property-level permissions)
 
-## Phase 0 plan
+## Phase 1 plan
 
 | Milestone | Scope | Status |
 |---|---|---|
-| 0.1 | Repository, architecture docs, ADRs, Docker Compose (Postgres, Redis) | ✅ Done |
-| 0.2 | Backend foundation: config, DB roles, migrations, RLS, authentication, sessions, CSRF, throttling, organisations, memberships, RBAC map, audit log, health checks, CLI, API image | ✅ Done |
-| 0.3 | Frontend foundation: Next.js app, design tokens, fonts, sign-in, organisation picker, role-aware app shell, organisation settings, team list, activity log, nonce CSP, unit/component/E2E tests | ✅ Done |
-| 0.4 | First green CI run on GitHub; installable PWA manifest and icons; warning status colour | ✅ Done |
+| 1.1 | Properties (timezone, currency, address, check-in/out policy) and buildings | ✅ Done |
+| 1.2 | Room types and physical rooms; separate housekeeping and maintenance status; room status board | ✅ Done |
+| 1.3 | Staff management: invitations, database-backed roles and permissions, property-level access (supersedes ADR-0004) | ⏳ Next |
+| 1.4 | Rate plans, seasonal and weekend rates, extra-guest charges, configurable taxes (NUMERIC money) | Not started |
 
-## Phase 0 acceptance criteria
+## Phase 1.1–1.2 acceptance criteria
 
 | Criterion | Status |
 |---|---|
-| `docker compose up` starts Postgres and Redis with separate owner and runtime roles | ✅ Verified |
-| Migrations upgrade, downgrade and re-upgrade cleanly; models and migrations match (`alembic check`) | ✅ Tested |
-| Staff sign in with Argon2id-hashed passwords; sessions expire (idle and absolute) and revoke on logout | ✅ Tested |
-| State-changing requests require a CSRF token | ✅ Tested |
-| Sign-in is throttled and fails closed without Redis | ✅ Tested |
-| A user in several organisations chooses one; cannot switch into one they don't belong to | ✅ Tested (API and E2E) |
-| Tenant data is isolated by the API **and** by RLS, proven with direct database tests | ✅ Tested |
-| Runtime role cannot delete data or alter audit logs | ✅ Tested |
-| Permissions enforced per role, in the API and in what the UI shows | ✅ Tested (API and E2E) |
-| Changes and sign-ins are audit-logged and visible to permitted roles | ✅ Tested (API and E2E) |
-| API container builds and runs as non-root | ✅ Verified manually |
-| Design tokens implemented, contrast measured | ✅ Done (`docs/DESIGN_SYSTEM.md`) |
-| Sign-in screen and app shell, usable on a phone without horizontal scroll | ✅ Tested (E2E on Pixel 7 viewport) |
-| Pages served with a strict nonce CSP and no console errors | ✅ Tested (E2E) |
-| CI green on GitHub | ✅ All 5 jobs passed on PR #1 (merged) |
-| Installable PWA | ✅ Manifest and icons served (E2E); no offline mode yet |
+| Property timezone and currency default from the organisation and can differ | ✅ Tested |
+| Buildings, room types and rooms cannot reference another property (application **and** composite foreign keys) | ✅ Tested, including a direct database insert |
+| Other tenants' properties return 404 | ✅ Tested |
+| Room numbers unique per property, including under concurrent requests | ✅ Tested (5 simultaneous requests, exactly 1 succeeds) |
+| Bulk room creation is all or nothing | ✅ Tested |
+| Housekeeping and maintenance status are independent, each with its own permission; maintenance needs a reason | ✅ Tested (API and E2E) |
+| Room types with active rooms cannot be archived | ✅ Tested |
+| Runtime role cannot delete rooms | ✅ Tested |
+| Setup changes and status changes are audit-logged | ✅ Tested |
+| Setup flow works end to end; room board usable on a phone without horizontal scroll | ✅ Tested (E2E) and reviewed in screenshots |
+| Occupancy and sellability | ⏳ Phase 2 (derived from reservations) |
 
-## Test results (milestone 0.3)
+## Test results (milestone 1.2)
 
-- Backend: **35 passed, 0 failed** (`uv run pytest`; real PostgreSQL 17 and Redis 7). `ruff`, `mypy --strict`: clean. `pip-audit`: no known vulnerabilities.
-- Frontend unit and component tests: **5 passed** (`npm test`). ESLint and TypeScript: clean. Production build: succeeds.
-- End-to-end: **11 passed, 0 failed** (`npm run e2e`; Chromium desktop and Pixel 7 against the real API and database).
-- `npm audit --omit=dev`: 0 vulnerabilities. Full audit: 8 moderate findings in ESLint's tooling (development only; see `docs/SECURITY.md`).
-- Manual review of screenshots: sign-in, overview, settings, activity log, team, phone menu.
+- Backend: **51 passed, 0 failed**. `ruff`, `mypy --strict`, `alembic check`: clean.
+- Frontend unit and component: **10 passed**. ESLint, TypeScript, production build: clean.
+- End-to-end: **16 passed, 0 failed** (desktop and phone).
+- Bugs found and fixed during the milestone: `Button asChild` crashed pages that used it (regression test added); an orphaned `next-server` process served an outdated build during testing (test procedure now stops it).
 
-## Repository state
+## Phase 0
 
-- History on `main` carries no AI attribution. Branch `phase-0-foundation-clean` is obsolete and can be deleted (the session's git proxy refused the deletion).
+Complete. All acceptance criteria met; CI green on PR #1 (merged). Details in git history and `CHANGELOG.md`.
 
 ## Known gaps
 
-See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no staff invitations or password reset (the operator CLI creates accounts), no platform-admin role, no offline mode.
+See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no staff invitations or password reset (the operator CLI creates accounts), permissions are organisation-wide rather than per property (1.3), no platform-admin role, no offline mode.
 
 ## Next
 
-1. Milestone 0.4: open a pull request so CI runs; fix anything it finds; PWA manifest and icons; warning colour.
-2. Phase 1: properties and buildings, room types and physical rooms, staff management with database-backed roles and property-level permissions (supersedes ADR-0004), rate plans.
+1. Milestone 1.3: staff invitations, roles and permissions in the database, property-level access.
+2. Milestone 1.4: rate plans and taxes.
+3. Phase 2: availability, reservations, booking calendar, guest records, check-in and check-out.

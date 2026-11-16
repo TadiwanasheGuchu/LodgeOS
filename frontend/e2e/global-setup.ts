@@ -20,6 +20,8 @@ export default function globalSetup() {
   const owner = `owner-${run}@lodge.example.com`;
   const receptionist = `desk-${run}@lodge.example.com`;
   const multi = `multi-${run}@lodge.example.com`;
+  const housekeeping = `hk-${run}@lodge.example.com`;
+  const maintenance = `fix-${run}@lodge.example.com`;
 
   cli("bootstrap-organisation", "--name", `Okavango Lodge ${run}`, "--slug", lodge, "--currency", "NAD",
     "--timezone", "Africa/Windhoek", "--country", "NA", "--owner-email", owner, "--owner-name", "Olivia Owner");
@@ -27,9 +29,11 @@ export default function globalSetup() {
     "--timezone", "Africa/Harare", "--country", "ZW", "--owner-email", multi, "--owner-name", "Mpho Multi");
   cli("add-member", "--org", lodge, "--email", receptionist, "--name", "Rudo Reception", "--role", "receptionist");
   cli("add-member", "--org", lodge, "--email", multi, "--name", "Mpho Multi", "--role", "manager");
+  cli("add-member", "--org", lodge, "--email", housekeeping, "--name", "Hilma Housekeeping", "--role", "housekeeping");
+  cli("add-member", "--org", lodge, "--email", maintenance, "--name", "Fanuel Fixit", "--role", "maintenance");
 
   writeFileSync(
     path.join(__dirname, ".run.json"),
-    JSON.stringify({ run, owner, receptionist, multi, lodgeName: `Okavango Lodge ${run}`, campName: `Matobo Camp ${run}` }),
+    JSON.stringify({ run, owner, receptionist, multi, housekeeping, maintenance, lodgeName: `Okavango Lodge ${run}`, campName: `Matobo Camp ${run}` }),
   );
 }

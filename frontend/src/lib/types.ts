@@ -5,7 +5,13 @@ export type Permission =
   | "organisation.manage"
   | "members.view"
   | "members.manage"
-  | "audit.view";
+  | "audit.view"
+  | "properties.view"
+  | "properties.manage"
+  | "rooms.view"
+  | "rooms.manage"
+  | "rooms.housekeeping_update"
+  | "rooms.maintenance_update";
 
 export type Role =
   | "owner"
@@ -79,3 +85,97 @@ export const ROLE_LABELS: Record<Role, string> = {
   maintenance: "Maintenance",
   accountant: "Accountant",
 };
+
+export type PropertyType =
+  | "guesthouse"
+  | "boutique_hotel"
+  | "hotel"
+  | "lodge"
+  | "safari_lodge"
+  | "resort"
+  | "serviced_apartments"
+  | "other";
+
+export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
+  guesthouse: "Guesthouse",
+  boutique_hotel: "Boutique hotel",
+  hotel: "Hotel",
+  lodge: "Lodge",
+  safari_lodge: "Safari lodge",
+  resort: "Resort",
+  serviced_apartments: "Serviced apartments",
+  other: "Other",
+};
+
+export interface Property {
+  id: string;
+  name: string;
+  slug: string;
+  property_type: PropertyType;
+  status: "active" | "archived";
+  timezone: string;
+  currency: string;
+  country_code: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  region: string | null;
+  postal_code: string | null;
+  phone: string | null;
+  email: string | null;
+  check_in_time: string;
+  check_out_time: string;
+  created_at: string;
+}
+
+export interface PropertySummary extends Property {
+  room_count: number;
+  room_type_count: number;
+}
+
+export interface Building {
+  id: string;
+  property_id: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  status: "active" | "archived";
+}
+
+export interface RoomType {
+  id: string;
+  property_id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  bed_configuration: string | null;
+  base_occupancy: number;
+  max_occupancy: number;
+  max_adults: number;
+  max_children: number;
+  sort_order: number;
+  status: "active" | "archived";
+  room_count: number;
+}
+
+export type HousekeepingStatus = "dirty" | "clean" | "inspected";
+export type MaintenanceStatus = "none" | "out_of_service" | "out_of_order";
+
+export interface Room {
+  id: string;
+  property_id: string;
+  number: string;
+  floor: string | null;
+  notes: string | null;
+  status: "active" | "archived";
+  room_type_id: string;
+  room_type_code: string;
+  room_type_name: string;
+  building_id: string | null;
+  building_name: string | null;
+  housekeeping_status: HousekeepingStatus;
+  housekeeping_updated_at: string | null;
+  maintenance_status: MaintenanceStatus;
+  maintenance_reason: string | null;
+  maintenance_updated_at: string | null;
+}
