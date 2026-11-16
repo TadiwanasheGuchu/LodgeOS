@@ -11,7 +11,9 @@ export type Permission =
   | "rooms.view"
   | "rooms.manage"
   | "rooms.housekeeping_update"
-  | "rooms.maintenance_update";
+  | "rooms.maintenance_update"
+  | "rates.view"
+  | "rates.manage";
 
 export type Role =
   | "owner"
@@ -173,6 +175,8 @@ export interface Property {
   email: string | null;
   check_in_time: string;
   check_out_time: string;
+  /** ISO weekdays (1 = Monday) of nights that use weekend prices. */
+  weekend_nights: number[];
   created_at: string;
 }
 
@@ -226,4 +230,102 @@ export interface Room {
   maintenance_status: MaintenanceStatus;
   maintenance_reason: string | null;
   maintenance_updated_at: string | null;
+}
+
+/** Money is a decimal string from the API, e.g. "1250.00". Never do arithmetic on it in the browser. */
+export type Money = string;
+
+export interface Tax {
+  id: string;
+  property_id: string;
+  name: string;
+  rate_percent: string;
+  sort_order: number;
+  status: "active" | "archived";
+}
+
+export type RatePlanKind = "standard" | "corporate" | "promotional" | "package";
+export type MealPlan = "room_only" | "bed_and_breakfast" | "half_board" | "full_board" | "all_inclusive";
+
+export const RATE_PLAN_KIND_LABELS: Record<RatePlanKind, string> = {
+  standard: "Standard",
+  corporate: "Corporate",
+  promotional: "Promotion",
+  package: "Package",
+};
+
+export const MEAL_PLAN_LABELS: Record<MealPlan, string> = {
+  room_only: "Room only",
+  bed_and_breakfast: "Bed and breakfast",
+  half_board: "Half board",
+  full_board: "Full board",
+  all_inclusive: "All inclusive",
+};
+
+export interface RatePlan {
+  id: string;
+  property_id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  kind: RatePlanKind;
+  meal_plan: MealPlan;
+  currency: string;
+  prices_include_tax: boolean;
+  min_stay_nights: number;
+  max_stay_nights: number | null;
+  stay_from: string | null;
+  stay_to: string | null;
+  sort_order: number;
+  status: "active" | "archived";
+}
+
+export interface PriceSet {
+  base_price: Money;
+  weekend_price: Money | null;
+  extra_adult_price: Money;
+  extra_child_price: Money;
+}
+
+export interface RatePlanPrice extends PriceSet {
+  room_type_id: string;
+}
+
+export interface Season extends RatePlanPrice {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+}
+
+export interface RatePlanDetail extends RatePlan {
+  prices: RatePlanPrice[];
+  seasons: Season[];
+}
+
+export interface QuoteNight {
+  date: string;
+  season: string | null;
+  weekend: boolean;
+  room_price: Money;
+  extra_adults: number;
+  extra_adult_amount: Money;
+  extra_children: number;
+  extra_child_amount: Money;
+  amount: Money;
+}
+
+export interface Quote {
+  currency: string;
+  prices_include_tax: boolean;
+  rate_plan_id: string;
+  rate_plan_name: string;
+  room_type_id: string;
+  room_type_name: string;
+  nights: QuoteNight[];
+  accommodation_total: Money;
+  net_total: Money;
+  taxes: { name: string; rate_percent: string; amount: Money }[];
+  tax_total: Money;
+  total: Money;
 }

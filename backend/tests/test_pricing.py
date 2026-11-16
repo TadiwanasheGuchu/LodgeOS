@@ -44,8 +44,9 @@ def q(**kw):
 def test_tax_inclusive_split() -> None:
     r = q()
     # 2 nights x 1000.00 = 2000.00 including 16% tax.
-    # net = 2000 / 1.16 = 1724.137... -> 1724.14; tax = 275.86
-    # VAT = 1724.14 x 15% = 258.621 -> 258.62; levy takes the rest = 17.24
+    # estimated net = 2000 / 1.16 = 1724.1379...
+    # VAT = 1724.1379 x 15% = 258.6207 -> 258.62; levy = 17.2414 -> 17.24; taxes 275.86
+    # net = 2000.00 - 275.86 = 1724.14
     assert r.accommodation_total == D("2000.00")
     assert r.net_total == D("1724.14")
     assert [(t.name, t.amount) for t in r.taxes] == [
@@ -55,6 +56,19 @@ def test_tax_inclusive_split() -> None:
     assert r.tax_total == D("275.86")
     assert r.total == D("2000.00")
     assert all(not n.weekend and n.season is None for n in r.nights)
+
+
+def test_each_tax_matches_its_rate_and_net_absorbs_rounding() -> None:
+    """Regression: 4 nights totalling 6000.00 with 15% VAT and a 1% levy. Putting the
+    rounding cent on the last tax made VAT 775.87, which is not 15% of the net."""
+    r = q(normal_prices=Prices(D("1500.00"), None, D(0), D(0)), check_out=date(2026, 11, 20))
+    # estimated net 5172.4137...; VAT 775.862 -> 775.86; levy 51.724 -> 51.72; net 5172.42
+    assert [(t.name, t.amount) for t in r.taxes] == [
+        ("VAT", D("775.86")),
+        ("Tourism levy", D("51.72")),
+    ]
+    assert r.net_total == D("5172.42")
+    assert r.total == D("6000.00")
 
 
 def test_tax_exclusive() -> None:
@@ -177,4 +191,10 @@ def test_parts_always_add_up_exactly() -> None:
             assert r.net_total + sum(t.amount for t in r.taxes) == r.total
             assert r.tax_total == sum((t.amount for t in r.taxes), D(0))
             assert all(t.amount >= 0 for t in r.taxes)
+            # Each tax is its rate applied to the final net, give or take one rounding
+            # cent per tax (the net carries the rounding, never a tax).
+            for t in r.taxes:
+                assert abs(t.amount - (r.net_total * t.rate_percent / 100)) <= D("0.01") * len(
+                    r.taxes
+                )
             assert r.total.as_tuple().exponent == -2

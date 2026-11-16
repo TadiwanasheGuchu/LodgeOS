@@ -29,8 +29,19 @@ const schema = z.object({
   postal_code: optional(20),
   phone: optional(40),
   email: z.union([z.literal(""), z.string().trim().email("Enter a valid email address.")]),
+  weekend_nights: z.array(z.string()),
 });
 type Values = z.infer<typeof schema>;
+
+const WEEKDAYS: [number, string][] = [
+  [1, "Mon"],
+  [2, "Tue"],
+  [3, "Wed"],
+  [4, "Thu"],
+  [5, "Fri"],
+  [6, "Sat"],
+  [7, "Sun"],
+];
 
 const TEXT_FIELDS = ["address_line1", "address_line2", "city", "region", "postal_code", "phone", "email"] as const;
 
@@ -50,6 +61,7 @@ function toValues(p: Partial<Property>, defaults: { timezone: string; currency: 
     postal_code: p.postal_code ?? "",
     phone: p.phone ?? "",
     email: p.email ?? "",
+    weekend_nights: (p.weekend_nights ?? [5, 6]).map(String),
   };
 }
 
@@ -77,6 +89,10 @@ export function PropertyForm({
     const body: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(values)) {
       if (property && !dirtyFields[k as keyof Values]) continue;
+      if (k === "weekend_nights") {
+        if (property) body[k] = (v as string[]).map(Number);
+        continue; // new properties use the default, Friday and Saturday nights
+      }
       body[k] = (TEXT_FIELDS as readonly string[]).includes(k) && v === "" ? null : v;
     }
     try {
@@ -155,6 +171,21 @@ export function PropertyForm({
           <Input type="time" {...describedBy("check_out_time", err("check_out_time"))} {...register("check_out_time")} />
         </Field>
       </fieldset>
+
+      {property ? (
+        <fieldset className="border-t border-line pt-5">
+          <legend className="text-sm font-semibold text-forest">Weekend nights</legend>
+          <p className="mt-1 mb-3 text-[13px] text-muted">Nights that use weekend prices. A night is named by its date: Friday night is the night from Friday to Saturday.</p>
+          <div className="flex flex-wrap gap-2">
+            {WEEKDAYS.map(([value, label]) => (
+              <label key={value} className="flex items-center gap-2 rounded-md border border-line px-3 py-2 text-sm has-[:checked]:border-forest has-[:checked]:bg-mist">
+                <input type="checkbox" value={String(value)} className="size-4 accent-forest" {...register("weekend_nights")} />
+                {label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
 
       <fieldset className="grid gap-5 border-t border-line pt-5 sm:grid-cols-2">
         <legend className="sr-only">Address and contact</legend>

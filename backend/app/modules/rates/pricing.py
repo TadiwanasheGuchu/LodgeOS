@@ -7,9 +7,11 @@ Rules
 - ``base_price`` covers the room type's base occupancy. Adults fill the included places
   first; guests beyond them pay the extra-adult or extra-child price.
 - All amounts are Decimal and rounded to cents with ROUND_HALF_UP only where stated.
-- Taxes are calculated on the net accommodation total, not compounded. When prices include
-  tax, net = total / (1 + sum of rates), rounded once; the tax total is the difference, and
-  is split across taxes in proportion to their rates, with any rounding cent on the last.
+- Taxes are calculated on the net accommodation total, not compounded, and each tax amount
+  is rounded on its own so that it matches its rate (as a tax invoice must).
+  When prices include tax, the net is first estimated as total / (1 + sum of rates); each
+  tax is that net times its rate, rounded; the net is then total minus the taxes, so any
+  rounding cent sits in the net, never in a tax, and net + taxes == total exactly.
 """
 
 from collections.abc import Sequence
@@ -141,19 +143,6 @@ def _season_for(night: date, seasons: Sequence[Season]) -> Season | None:
     return None
 
 
-def _split_taxes(net: Decimal, tax_total: Decimal, taxes: Sequence[TaxRate]) -> list[TaxAmount]:
-    """Split ``tax_total`` across taxes in proportion to their rates. Every amount but the
-    last is rounded on its own; the last takes the remainder, so the parts always add up."""
-    if not taxes:
-        return []
-    parts: list[TaxAmount] = []
-    for t in taxes[:-1]:
-        parts.append(TaxAmount(t.name, t.rate_percent, cents(net * t.rate_percent / HUNDRED)))
-    last = taxes[-1]
-    parts.append(TaxAmount(last.name, last.rate_percent, tax_total - sum(p.amount for p in parts)))
-    return parts
-
-
 def quote(
     *,
     rules: PlanRules,
@@ -204,14 +193,15 @@ def quote(
 
     total = cents(sum((n.amount for n in nights), Decimal(0)))
     rate_sum = sum((t.rate_percent for t in taxes), Decimal(0))
+    taxable = total / (1 + rate_sum / HUNDRED) if rules.prices_include_tax else total
+    tax_amounts = [
+        TaxAmount(t.name, t.rate_percent, cents(taxable * t.rate_percent / HUNDRED)) for t in taxes
+    ]
+    tax_total = sum((t.amount for t in tax_amounts), Decimal("0.00"))
     if rules.prices_include_tax:
-        net = cents(total / (1 + rate_sum / HUNDRED))
-        tax_total = total - net
-        gross = total
+        net, gross = total - tax_total, total
     else:
-        net = total
-        tax_total = sum((cents(net * t.rate_percent / HUNDRED) for t in taxes), Decimal("0.00"))
-        gross = net + tax_total
+        net, gross = total, total + tax_total
 
     return Quote(
         currency=rules.currency,
@@ -219,7 +209,7 @@ def quote(
         nights=nights,
         accommodation_total=total,
         net_total=net,
-        taxes=_split_taxes(net, tax_total, taxes),
+        taxes=tax_amounts,
         tax_total=tax_total,
         total=gross,
     )

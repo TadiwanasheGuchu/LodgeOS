@@ -75,6 +75,21 @@ IDs belonging to another organisation return 404, exactly like IDs that do not e
 
 `GET /api/v1/auth/me` now returns `active_organisation.role_label`, `permissions` (granted for every property) and `property_permissions` (`{property_id: [...]}`); memberships carry `role_label`.
 
+## Endpoints (Phase 1.4)
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| GET / POST | `/api/v1/properties/{id}/taxes` | `rates.view` / `rates.manage` | |
+| PATCH | `/api/v1/taxes/{id}` | `rates.manage` | Name, rate, order, `status: archived` to stop charging |
+| GET / POST | `/api/v1/properties/{id}/rate-plans` | view / manage | Create copies the property's currency |
+| GET / PATCH | `/api/v1/rate-plans/{id}` | view / manage | Detail includes `prices` and `seasons` |
+| PUT / DELETE | `/api/v1/rate-plans/{id}/prices/{room_type_id}` | `rates.manage` | Set or clear the normal prices for a room type |
+| POST | `/api/v1/rate-plans/{id}/seasons` | `rates.manage` | 409 if it overlaps another season for that room type |
+| PATCH / DELETE | `/api/v1/seasons/{id}` | `rates.manage` | |
+| POST | `/api/v1/properties/{id}/quote` | `rates.view` | `{rate_plan_id, room_type_id, check_in, check_out, adults, children}` → nights, net, taxes, total. 422 with a plain explanation when the stay cannot be priced |
+
+All amounts are decimal strings, e.g. `"1250.00"`.
+
 ## Role permissions
 
 Defaults of the six system roles (organisation-wide grants). A role granted for one property applies its `properties.*` and `rooms.*` permissions to that property only.
@@ -92,3 +107,5 @@ Defaults of the six system roles (organisation-wide grants). A role granted for 
 | rooms.manage | ✓ | ✓ | | | | |
 | rooms.housekeeping_update | ✓ | ✓ | ✓ | ✓ | | |
 | rooms.maintenance_update | ✓ | ✓ | | | ✓ | |
+| rates.view | ✓ | ✓ | ✓ | | | ✓ |
+| rates.manage | ✓ | ✓ | | | | |

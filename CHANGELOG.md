@@ -5,6 +5,7 @@ All notable changes are recorded here. Format based on [Keep a Changelog](https:
 ## [Unreleased]
 
 ### Added
+- Rates: taxes per property, rate plans (standard, corporate, promotion, package; meal plan; minimum stay; validity window), prices per room type with weekend and extra-guest prices, non-overlapping seasons, configurable weekend nights, and a price calculator that shows every night, each tax and the total (ADR-0007).
 - Staff management: roles and permissions in the database, roles for all properties or one property, invitations by shareable link (copy or WhatsApp), turning access off and on. Team page rewritten for this.
 - Property-scoped access throughout the API and UI; properties without access are not found.
 - Properties with their own timezone, currency, address and check-in/check-out times; buildings; room types with occupancy limits; physical rooms. Archive instead of delete.

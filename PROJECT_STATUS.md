@@ -3,7 +3,7 @@
 _Last updated: 2026-11-16_
 
 **Current phase:** 1 — Property management
-**Current milestone:** 1.3 complete; next is 1.4 (rate plans and taxes)
+**Current milestone:** Phase 1 complete (1.4 done); next is Phase 2 (reservations)
 
 ## Phase 1 plan
 
@@ -12,7 +12,7 @@ _Last updated: 2026-11-16_
 | 1.1 | Properties (timezone, currency, address, check-in/out policy) and buildings | ✅ Done |
 | 1.2 | Room types and physical rooms; separate housekeeping and maintenance status; room status board | ✅ Done |
 | 1.3 | Staff management: invitations, database-backed roles and permissions, property-level access (ADR-0006) | ✅ Done |
-| 1.4 | Rate plans, seasonal and weekend rates, extra-guest charges, configurable taxes (NUMERIC money) | ⏳ Next |
+| 1.4 | Rate plans, seasonal and weekend rates, extra-guest charges, configurable taxes (NUMERIC money; ADR-0007) | ✅ Done |
 
 ## Phase 1.1–1.2 acceptance criteria
 
@@ -30,6 +30,18 @@ _Last updated: 2026-11-16_
 | Setup flow works end to end; room board usable on a phone without horizontal scroll | ✅ Tested (E2E) and reviewed in screenshots |
 | Occupancy and sellability | ⏳ Phase 2 (derived from reservations) |
 
+## Phase 1.4 acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| Money stored as NUMERIC, sent as decimal strings, never calculated in the browser | ✅ Tested |
+| Seasons cannot overlap for one plan and room type (database exclusion constraint) | ✅ Tested (API and E2E) |
+| Weekend, seasonal and extra-guest prices applied night by night | ✅ Tested |
+| Taxes configured per property; nothing country-specific in code | ✅ |
+| Net + taxes = total exactly; each tax matches its rate | ✅ Tested over 4,000 randomised cases plus a regression test |
+| Stays that cannot be priced are explained (occupancy, minimum stay, validity, missing price) | ✅ Tested |
+| Receptionists can price stays but not change rates; other tenants see nothing | ✅ Tested |
+
 ## Phase 1.3 acceptance criteria
 
 | Criterion | Status |
@@ -43,6 +55,13 @@ _Last updated: 2026-11-16_
 | Existing accounts must prove ownership to accept | ✅ Tested |
 | Roles, memberships and assignments from other organisations are never listed or usable | ✅ Tested (two regression tests) |
 | Invitation flow works end to end in a fresh browser | ✅ Tested (E2E) |
+
+## Test results (milestone 1.4)
+
+- Backend: **94 passed, 0 failed**. `ruff`, `mypy --strict`, `alembic check`: clean.
+- Frontend unit and component: **14 passed**. ESLint, TypeScript, production build: clean.
+- End-to-end: **22 passed, 0 failed**.
+- Bugs found and fixed: the price calculator kept a stale plan selection after a plan was added; tax rounding put the cent on the last tax (VAT one cent off its rate, found by checking a screenshot by hand); repeated local E2E runs hit the sign-in throttle (the setup now clears only those counters).
 
 ## Test results (milestone 1.3)
 
@@ -68,5 +87,4 @@ See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no password reset, no
 
 ## Next
 
-1. Milestone 1.4: rate plans, seasonal and weekend rates, extra-guest charges, taxes.
-2. Phase 2: availability, reservations, booking calendar, guest records, check-in and check-out.
+1. Phase 2: availability, reservations, booking calendar, guest records, check-in and check-out.
