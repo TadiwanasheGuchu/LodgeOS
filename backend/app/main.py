@@ -14,6 +14,8 @@ from app.core.db import dispose_engine, get_sessionmaker
 from app.core.redis import close_redis, get_redis
 from app.modules.auth.router import router as auth_router
 from app.modules.organisations.router import router as organisation_router
+from app.modules.properties.router import router as properties_router
+from app.modules.rooms.router import router as rooms_router
 
 log = structlog.get_logger()
 
@@ -81,6 +83,8 @@ def create_app() -> FastAPI:
 
     app.include_router(auth_router)
     app.include_router(organisation_router)
+    app.include_router(properties_router)
+    app.include_router(rooms_router)
     return app
 
 

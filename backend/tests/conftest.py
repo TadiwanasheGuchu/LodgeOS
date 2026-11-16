@@ -41,7 +41,10 @@ from app.modules.auth.models import User  # noqa: E402
 from app.modules.organisations.models import Organisation, OrganisationUser, Role  # noqa: E402
 
 PASSWORD = "correct horse battery staple"
-_TABLES = "audit_logs, user_sessions, organisation_users, users, organisations"
+_TABLES = (
+    "rooms, room_types, buildings, properties, "
+    "audit_logs, user_sessions, organisation_users, users, organisations"
+)
 
 
 async def _recreate_database() -> None:

@@ -16,6 +16,12 @@ class Permission(enum.StrEnum):
     MEMBERS_VIEW = "members.view"
     MEMBERS_MANAGE = "members.manage"
     AUDIT_VIEW = "audit.view"
+    PROPERTIES_VIEW = "properties.view"
+    PROPERTIES_MANAGE = "properties.manage"
+    ROOMS_VIEW = "rooms.view"
+    ROOMS_MANAGE = "rooms.manage"
+    ROOMS_HOUSEKEEPING = "rooms.housekeeping_update"
+    ROOMS_MAINTENANCE = "rooms.maintenance_update"
 
 
 ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
@@ -26,12 +32,43 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
             Permission.MEMBERS_VIEW,
             Permission.MEMBERS_MANAGE,
             Permission.AUDIT_VIEW,
+            Permission.PROPERTIES_VIEW,
+            Permission.PROPERTIES_MANAGE,
+            Permission.ROOMS_VIEW,
+            Permission.ROOMS_MANAGE,
+            Permission.ROOMS_HOUSEKEEPING,
+            Permission.ROOMS_MAINTENANCE,
         }
     ),
-    Role.RECEPTIONIST: frozenset({Permission.ORGANISATION_VIEW}),
-    Role.HOUSEKEEPING: frozenset({Permission.ORGANISATION_VIEW}),
-    Role.MAINTENANCE: frozenset({Permission.ORGANISATION_VIEW}),
-    Role.ACCOUNTANT: frozenset({Permission.ORGANISATION_VIEW, Permission.AUDIT_VIEW}),
+    # Front desk marks rooms clean after a quick check and reports faults, but does not
+    # change property setup.
+    Role.RECEPTIONIST: frozenset(
+        {
+            Permission.ORGANISATION_VIEW,
+            Permission.PROPERTIES_VIEW,
+            Permission.ROOMS_VIEW,
+            Permission.ROOMS_HOUSEKEEPING,
+        }
+    ),
+    Role.HOUSEKEEPING: frozenset(
+        {
+            Permission.ORGANISATION_VIEW,
+            Permission.PROPERTIES_VIEW,
+            Permission.ROOMS_VIEW,
+            Permission.ROOMS_HOUSEKEEPING,
+        }
+    ),
+    Role.MAINTENANCE: frozenset(
+        {
+            Permission.ORGANISATION_VIEW,
+            Permission.PROPERTIES_VIEW,
+            Permission.ROOMS_VIEW,
+            Permission.ROOMS_MAINTENANCE,
+        }
+    ),
+    Role.ACCOUNTANT: frozenset(
+        {Permission.ORGANISATION_VIEW, Permission.AUDIT_VIEW, Permission.PROPERTIES_VIEW}
+    ),
 }
 
 
