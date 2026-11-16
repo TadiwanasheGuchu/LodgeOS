@@ -28,6 +28,7 @@ async def test_owner_updates_settings_and_change_is_audited(client, factory: Fac
     logs = (await client.get("/api/v1/organisation/audit-logs")).json()["items"]
     update = next(log for log in logs if log["action"] == "organisation.updated")
     assert update["actor_user_id"] == str(user.id)
+    assert update["actor_name"] == user.full_name
     assert update["data"]["before"]["name"] == "Etosha Edge Lodge"
     assert update["data"]["after"]["default_currency"] == "USD"
 

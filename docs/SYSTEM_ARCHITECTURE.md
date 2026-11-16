@@ -39,6 +39,25 @@ Rules for modules:
 - Business rules live in services, not routers, so they can be reused by Celery tasks and integrations.
 - Every tenant-owned table has an `organisation_id` column and RLS (see below).
 
+## Frontend layout
+
+```
+frontend/
+  src/proxy.ts                 per-request CSP nonce and security headers
+  src/app/sign-in/             sign-in (public)
+  src/app/select-organisation/ organisation picker
+  src/app/(app)/               signed-in area: layout.tsx loads the user, AppShell renders
+                               role-filtered navigation; pages: overview, team, activity, settings
+  src/components/ui/           Button, Field/Input/Select, Alert
+  src/lib/server/api.ts        server-side API calls (forwards cookies; redirects on 401)
+  src/lib/api-client.ts        browser API calls (adds CSRF header; maps errors)
+  e2e/                         Playwright tests against the real API
+```
+
+- The browser only talks to the Next.js origin; `next.config.ts` rewrites `/api/*` to the FastAPI service (ADR-0005).
+- Pages are server-rendered per request. Server components read the session through the API, never directly from the database.
+- Navigation lists only screens that exist and that the role may open. The API still enforces every permission.
+
 ## Request lifecycle
 
 1. `CORSMiddleware` → `CSRFMiddleware` (double-submit token for unsafe methods under `/api/`).

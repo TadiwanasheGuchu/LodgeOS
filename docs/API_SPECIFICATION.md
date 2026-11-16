@@ -37,7 +37,7 @@ The authoritative, always-current schema is the OpenAPI document served by the A
 | GET | `/api/v1/organisation` | `organisation.view` | Current organisation |
 | PATCH | `/api/v1/organisation` | `organisation.manage` | Update `name`, `default_currency`, `default_timezone`, `country_code` |
 | GET | `/api/v1/organisation/members` | `members.view` | Staff of the current organisation |
-| GET | `/api/v1/organisation/audit-logs` | `audit.view` | Newest first; `cursor`, `limit` (1–200) |
+| GET | `/api/v1/organisation/audit-logs` | `audit.view` | Newest first; `cursor`, `limit` (1–200); each item includes `actor_name` |
 
 ## Role permissions (Phase 0)
 

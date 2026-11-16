@@ -102,7 +102,8 @@ async def list_audit_logs(
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> AuditLogPage:
     stmt = (
-        select(AuditLog)
+        select(AuditLog, User.full_name)
+        .outerjoin(User, User.id == AuditLog.actor_user_id)
         .where(AuditLog.organisation_id == auth.organisation_id)
         .order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
         .limit(limit + 1)
@@ -116,10 +117,14 @@ async def list_audit_logs(
         except ValueError:
             raise HTTPException(status_code=422, detail="Invalid cursor.") from None
         stmt = stmt.where(tuple_(AuditLog.created_at, AuditLog.id) < after)
-    items = list((await db.scalars(stmt)).all())
-    has_more = len(items) > limit
-    items = items[:limit]
+    rows = list((await db.execute(stmt)).all())
+    has_more = len(rows) > limit
+    rows = rows[:limit]
+    items = [log for log, _ in rows]
     return AuditLogPage(
-        items=[AuditLogOut.model_validate(i) for i in items],
+        items=[
+            AuditLogOut.model_validate(log).model_copy(update={"actor_name": name})
+            for log, name in rows
+        ],
         next_cursor=f"{items[-1].created_at.isoformat()}|{items[-1].id}" if has_more else None,
     )

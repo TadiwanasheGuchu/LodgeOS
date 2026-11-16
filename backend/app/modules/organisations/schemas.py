@@ -58,6 +58,7 @@ class AuditLogOut(BaseModel):
     id: uuid.UUID
     action: str
     actor_user_id: uuid.UUID | None
+    actor_name: str | None = None
     entity_type: str | None
     entity_id: uuid.UUID | None
     data: dict[str, object]

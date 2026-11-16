@@ -21,7 +21,24 @@ uv run uvicorn app.main:app --reload
 
 API docs: http://localhost:8000/docs
 
-Tests (needs the compose Postgres and Redis running; creates and drops `lodgeos_test`):
+Frontend (second terminal):
+
+```bash
+cd frontend
+npm install
+npm run dev            # http://localhost:3000, forwards /api/* to the API on :8000
+```
+
+Add staff to an organisation (until invitations exist):
+
+```bash
+uv run python -m app.cli add-member --org demo-guesthouse \
+  --email desk@demo-guesthouse.example.com --name "Front Desk" --role receptionist
+```
+
+Frontend checks: `npm run lint`, `npm run typecheck`, `npm test`. End-to-end (needs Postgres, Redis and migrations; starts the API and a production build itself): `npm run build && npm run e2e`.
+
+Backend tests (needs the compose Postgres and Redis running; creates and drops `lodgeos_test`):
 
 ```bash
 cd backend && uv run pytest
@@ -50,6 +67,7 @@ docker run --rm -e LODGEOS_MIGRATION_DATABASE_URL=... lodgeos-api alembic upgrad
 ## Production checklist (to be completed in Phase 6)
 
 - Separate, generated passwords for `postgres`, `lodgeos_owner` and `lodgeos_app`; the API receives only the `lodgeos_app` URL.
+- Frontend: set `LODGEOS_API_ORIGIN` to the internal API address; serve both behind the same domain.
 - `LODGEOS_ENVIRONMENT=production` (disables `/docs` and `/openapi.json`), `LODGEOS_COOKIE_SECURE=true`.
 - TLS at Caddy or Nginx; forward `X-Forwarded-For` and restrict `--forwarded-allow-ips` to the proxy.
 - Postgres and Redis not exposed publicly.

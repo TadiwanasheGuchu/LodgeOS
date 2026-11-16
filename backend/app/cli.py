@@ -6,7 +6,11 @@ Run them only from a trusted shell, never from the API.
         --currency NAD --timezone Africa/Windhoek --country NA \\
         --owner-email owner@example.com --owner-name "Owner Name"
 
-The owner's password is read from LODGEOS_BOOTSTRAP_PASSWORD or prompted for.
+    uv run python -m app.cli add-member --org kalahari-rest \\
+        --email frontdesk@example.com --name "Front Desk" --role receptionist
+
+Passwords for new users are read from LODGEOS_BOOTSTRAP_PASSWORD or prompted for.
+These commands exist until staff invitations are built.
 """
 
 import argparse
@@ -69,6 +73,53 @@ async def bootstrap_organisation(args: argparse.Namespace, password: str) -> Non
         await engine.dispose()
 
 
+async def add_member(args: argparse.Namespace, password: str | None) -> None:
+    engine = create_async_engine(get_settings().migration_database_url.get_secret_value())
+    try:
+        async with async_sessionmaker(engine)() as db, db.begin():
+            org = await db.scalar(select(Organisation).where(Organisation.slug == args.org))
+            if org is None:
+                raise SystemExit(f"No organisation with slug {args.org!r}")
+            email = args.email.strip().lower()
+            user = await db.scalar(select(User).where(func.lower(User.email) == email))
+            if user is None:
+                if password is None:
+                    raise SystemExit("A password is required for a new user")
+                user = User(email=email, full_name=args.name, password_hash=hash_password(password))
+                db.add(user)
+                await db.flush()
+                print(f"Created user {email}")
+            existing = await db.scalar(
+                select(OrganisationUser).where(
+                    OrganisationUser.organisation_id == org.id,
+                    OrganisationUser.user_id == user.id,
+                )
+            )
+            if existing is not None:
+                raise SystemExit(f"{email} is already a member of {org.slug} ({existing.role})")
+            db.add(OrganisationUser(organisation_id=org.id, user_id=user.id, role=args.role))
+            db.add(
+                AuditLog(
+                    organisation_id=org.id,
+                    actor_user_id=None,
+                    action="member.added",
+                    entity_type="user",
+                    entity_id=user.id,
+                    data={"role": args.role, "via": "cli"},
+                )
+            )
+            print(f"Added {email} to {org.slug} as {args.role}")
+    finally:
+        await engine.dispose()
+
+
+def _read_password(parser: argparse.ArgumentParser, prompt: str) -> str:
+    password = os.environ.get("LODGEOS_BOOTSTRAP_PASSWORD") or getpass.getpass(prompt)
+    if not MIN_PASSWORD_LENGTH <= len(password) <= MAX_PASSWORD_LENGTH:
+        parser.error(f"Password must be {MIN_PASSWORD_LENGTH}-{MAX_PASSWORD_LENGTH} characters")
+    return password
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="lodgeos")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -82,7 +133,21 @@ def main(argv: list[str] | None = None) -> int:
     boot.add_argument("--owner-email", required=True)
     boot.add_argument("--owner-name", required=True)
 
+    member = sub.add_parser("add-member", help="Add a user to an organisation with a role")
+    member.add_argument("--org", required=True, help="Organisation slug")
+    member.add_argument("--email", required=True)
+    member.add_argument("--name", required=True)
+    member.add_argument("--role", required=True, choices=[r.value for r in Role])
+
     args = parser.parse_args(argv)
+
+    if args.command == "add-member":
+        try:
+            validate_email(args.email, check_deliverability=False)
+        except EmailNotValidError as exc:
+            parser.error(f"--email: {exc}")
+        asyncio.run(add_member(args, _read_password(parser, "Password for new user: ")))
+        return 0
 
     try:
         validate_email(args.owner_email, check_deliverability=False)
@@ -95,11 +160,7 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         parser.error(str(exc))
 
-    password = os.environ.get("LODGEOS_BOOTSTRAP_PASSWORD") or getpass.getpass("Owner password: ")
-    if not MIN_PASSWORD_LENGTH <= len(password) <= MAX_PASSWORD_LENGTH:
-        parser.error(f"Password must be {MIN_PASSWORD_LENGTH}-{MAX_PASSWORD_LENGTH} characters")
-
-    asyncio.run(bootstrap_organisation(args, password))
+    asyncio.run(bootstrap_organisation(args, _read_password(parser, "Owner password: ")))
     return 0
 
 

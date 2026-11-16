@@ -1,6 +1,6 @@
 # LodgeOS Design System
 
-Status: **tokens defined; not yet implemented in the frontend** (Phase 0, milestone 0.3).
+Status: **implemented** in `frontend/src/app/globals.css` (Tailwind v4 `@theme`), milestone 0.3.
 
 The non-negotiable rules live in `CLAUDE.md` §10. This document turns them into usable tokens and records how each one may be used.
 
@@ -34,12 +34,27 @@ The non-negotiable rules live in `CLAUDE.md` §10. This document turns them into
 - **Text on forest:** `white` or `sage`. Never `teal` (2.34) or `charcoal` (1.01).
 - **Focus ring:** 2px `teal` outline with 2px offset. It meets 3:1 against `white`, `cloud` and `mist`.
 
+### Supporting tokens (added in 0.3, measured)
+
+| Token | Hex | Use | Contrast |
+|---|---|---|---|
+| `line` | `#D3E0DC` | Dividers and table rules only | 1.36 on white (decorative) |
+| `control` | `#728883` | Borders of inputs and controls | 3.77 on white, 3.57 on cloud (meets 3:1) |
+| `muted` | `#4B625D` | Secondary text | 6.55 white, 6.20 cloud, 5.70 mist |
+| `danger` | `#B42318` | Errors | 6.57 on white, 5.75 on `danger-tint` |
+| `danger-tint` | `#FDECEA` | Error panel background | — |
+| `success` | `#1D6B5F` | Confirmations, "active" | 5.52 on `success-tint` |
+| `success-tint` | `#E3F3EF` | Success panel background | — |
+
 ### Status colours
 
-Hospitality screens need states (confirmed, checked-in, dirty, out of order, overdue). These states must not rely on brown, orange-brown, amber-brown or any earth tone (`CLAUDE.md` §10). The status palette is to be defined with milestone 0.3. Proposed constraints:
+Hospitality states (confirmed, checked-in, dirty, out of order, overdue) must not use brown, orange-brown, amber-brown or any earth tone (`CLAUDE.md` §10).
 - Every status pairs a colour with an icon or text label; colour alone never carries meaning.
-- Error/danger: a clear red. Warning: a clean yellow, checked to not read as brown or amber-brown. Success: from the teal/forest family.
-- Each status colour gets measured contrast values in this document before use.
+- Error and success are defined above. A warning colour is still to be chosen; it must be a clean yellow that does not read as amber-brown, with measured contrast, before any screen uses it.
+
+## Components (milestone 0.3)
+
+`frontend/src/components/ui/`: `Button` (primary, secondary, ghost, danger; loading state), `Field` + `Input` + `Select` (label, hint and error wired with `aria-describedby` / `aria-invalid`), `Alert` (error, success, info, always with an icon). Native `<select>` is used deliberately: it is accessible and works best on phones.
 
 ## Typography
 
@@ -59,7 +74,7 @@ Lucide only. No emoji in navigation or controls.
 
 No brown of any kind, and none of the generic patterns listed in `CLAUDE.md` §10 (gradients, glassmorphism, blobs, fake charts, oversized operational headings, decorative animation).
 
-## Per-role information architecture (to be designed)
+## Per-role information architecture (home screens to be designed with Phase 2)
 
 | Role | Primary device | Home screen focus |
 |---|---|---|
