@@ -1,0 +1,10 @@
+# Architecture Decision Records
+
+One file per significant decision: `NNNN-short-title.md` with Status, Context, Decision, Consequences. Superseded records stay, marked as superseded.
+
+| # | Decision | Status |
+|---|---|---|
+| 0001 | Modular monolith | Accepted |
+| 0002 | Tenant isolation: server-side session plus PostgreSQL RLS | Accepted |
+| 0003 | Server-side sessions with cookie and CSRF token | Accepted |
+| 0004 | Fixed role map in Phase 0 | Accepted (to be superseded in Phase 1) |

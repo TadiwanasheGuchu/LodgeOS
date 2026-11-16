@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres-ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      LODGEOS_OWNER_PASSWORD: owner-ci
+      LODGEOS_APP_PASSWORD: app-ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.32"
+      - name: Create database roles
+        env:
+          PGPASSWORD: postgres-ci
+          POSTGRES_USER: postgres
+          PGHOST: 127.0.0.1
+        run: |
+          # The init script uses psql's default host; point it at the service container.
+          sh ../infra/postgres/init/01-roles.sh
+      - run: uv sync --frozen
+      - name: Lint
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Type check
+        run: uv run mypy app
+      - name: Tests (includes migration upgrade/downgrade/upgrade)
+        run: uv run pytest
+      - name: Migrations match models
+        env:
+          LODGEOS_MIGRATION_DATABASE_URL: postgresql+asyncpg://lodgeos_owner:owner-ci@127.0.0.1:5432/lodgeos
+        run: uv run alembic upgrade head && uv run alembic check
+
+  backend-image:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t lodgeos-api:ci backend
+
+  dependency-audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.32"
+      - name: Audit Python dependencies for known vulnerabilities
+        working-directory: backend
+        run: uv export --frozen --no-hashes --format requirements-txt > /tmp/req.txt && uvx pip-audit -r /tmp/req.txt
