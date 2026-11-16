@@ -5,6 +5,8 @@ All notable changes are recorded here. Format based on [Keep a Changelog](https:
 ## [Unreleased]
 
 ### Added
+- Installable web app: manifest, app icons ("L." mark in Fraunces) and a maskable icon.
+- Warning colour tokens and a warning alert style.
 - Frontend (Next.js 16, React 19, Tailwind 4): Forest & Teal design tokens with measured contrast, Fraunces / DM Sans / IBM Plex Mono, sign-in, organisation picker, role-aware app shell (sidebar on desktop, menu on phones), overview, organisation settings (editable by owners, read-only for others), team list, activity log with pagination.
 - Nonce-based Content-Security-Policy and security headers on every page.
 - Frontend tests: Vitest unit and component tests; Playwright end-to-end tests against the real API, including a phone viewport.

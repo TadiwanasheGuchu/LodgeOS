@@ -41,3 +41,15 @@ test("sign out ends the session", async ({ page }) => {
   await page.goto("/settings");
   await expect(page).toHaveURL(/\/sign-in$/);
 });
+
+test("the app is installable: manifest and icons are served", async ({ request }) => {
+  const res = await request.get("/manifest.webmanifest");
+  expect(res.ok()).toBe(true);
+  const manifest = await res.json();
+  expect(manifest).toMatchObject({ name: "LodgeOS", display: "standalone", theme_color: "#123C35" });
+  for (const icon of manifest.icons as { src: string }[]) {
+    const img = await request.get(icon.src);
+    expect(img.ok(), icon.src).toBe(true);
+    expect(img.headers()["content-type"]).toBe("image/png");
+  }
+});

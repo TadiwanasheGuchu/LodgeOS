@@ -3,7 +3,7 @@
 _Last updated: 2026-11-16_
 
 **Current phase:** 0 — Foundation
-**Current milestone:** 0.3 complete; next is 0.4 (CI confirmation and PWA basics), then Phase 1
+**Current milestone:** Phase 0 complete; Phase 1 (property management) in progress
 
 ## Phase 0 plan
 
@@ -12,7 +12,7 @@ _Last updated: 2026-11-16_
 | 0.1 | Repository, architecture docs, ADRs, Docker Compose (Postgres, Redis) | ✅ Done |
 | 0.2 | Backend foundation: config, DB roles, migrations, RLS, authentication, sessions, CSRF, throttling, organisations, memberships, RBAC map, audit log, health checks, CLI, API image | ✅ Done |
 | 0.3 | Frontend foundation: Next.js app, design tokens, fonts, sign-in, organisation picker, role-aware app shell, organisation settings, team list, activity log, nonce CSP, unit/component/E2E tests | ✅ Done |
-| 0.4 | First green CI run on GitHub; installable PWA manifest and icons; warning status colour | ⏳ Next |
+| 0.4 | First green CI run on GitHub; installable PWA manifest and icons; warning status colour | ✅ Done |
 
 ## Phase 0 acceptance criteria
 
@@ -32,8 +32,8 @@ _Last updated: 2026-11-16_
 | Design tokens implemented, contrast measured | ✅ Done (`docs/DESIGN_SYSTEM.md`) |
 | Sign-in screen and app shell, usable on a phone without horizontal scroll | ✅ Tested (E2E on Pixel 7 viewport) |
 | Pages served with a strict nonce CSP and no console errors | ✅ Tested (E2E) |
-| CI green on GitHub | ⏳ Not yet run (see below) |
-| Installable PWA | ⏳ Milestone 0.4 |
+| CI green on GitHub | ✅ All 5 jobs passed on PR #1 (merged) |
+| Installable PWA | ✅ Manifest and icons served (E2E); no offline mode yet |
 
 ## Test results (milestone 0.3)
 
@@ -45,12 +45,11 @@ _Last updated: 2026-11-16_
 
 ## Repository state
 
-- Commit messages no longer carry AI attribution (rule added to `CLAUDE.md`). Removing it from the two commits already on GitHub needs a force-push of `main` and `phase-0-foundation`, which has not happened yet. Until it does, the cleaned history is on branch `phase-0-foundation-clean`.
-- The CI workflow runs on pushes to `main` and on pull requests; it has not run yet because no pull request is open.
+- History on `main` carries no AI attribution. Branch `phase-0-foundation-clean` is obsolete and can be deleted (the session's git proxy refused the deletion).
 
 ## Known gaps
 
-See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no staff invitations or password reset (the operator CLI creates accounts), no platform-admin role, no PWA manifest yet.
+See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no staff invitations or password reset (the operator CLI creates accounts), no platform-admin role, no offline mode.
 
 ## Next
 
