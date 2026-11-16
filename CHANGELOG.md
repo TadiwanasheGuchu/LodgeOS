@@ -5,6 +5,8 @@ All notable changes are recorded here. Format based on [Keep a Changelog](https:
 ## [Unreleased]
 
 ### Added
+- Staff management: roles and permissions in the database, roles for all properties or one property, invitations by shareable link (copy or WhatsApp), turning access off and on. Team page rewritten for this.
+- Property-scoped access throughout the API and UI; properties without access are not found.
 - Properties with their own timezone, currency, address and check-in/check-out times; buildings; room types with occupancy limits; physical rooms. Archive instead of delete.
 - Database-level integrity: composite foreign keys keep buildings, room types and rooms within one property and one organisation; RLS on all four tables.
 - Room status board (`/rooms`): one-tap Dirty / Clean / Inspected for housekeeping, and out-of-service / out-of-order with a required reason for maintenance, each behind its own permission.
