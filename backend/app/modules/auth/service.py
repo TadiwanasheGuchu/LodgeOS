@@ -15,6 +15,7 @@ from app.core.security import (
     password_needs_rehash,
     verify_password,
 )
+from app.modules.access.service import Grants, load_grants
 from app.modules.audit import service as audit
 from app.modules.auth.models import User, UserSession
 from app.modules.organisations.models import (
@@ -38,7 +39,12 @@ class Membership:
     organisation_id: uuid.UUID
     organisation_name: str
     organisation_slug: str
-    role: str
+    membership_id: uuid.UUID
+    grants: Grants
+
+    @property
+    def role(self) -> str:
+        return self.grants.primary_role_key or ""
 
 
 def utcnow() -> datetime:
@@ -48,7 +54,7 @@ def utcnow() -> datetime:
 async def list_memberships(db: AsyncSession, user_id: uuid.UUID) -> list[Membership]:
     """Active memberships in active organisations. Requires app.current_user_id to be set."""
     rows = await db.execute(
-        select(Organisation.id, Organisation.name, Organisation.slug, OrganisationUser.role)
+        select(Organisation.id, Organisation.name, Organisation.slug, OrganisationUser.id)
         .join(OrganisationUser, OrganisationUser.organisation_id == Organisation.id)
         .where(
             OrganisationUser.user_id == user_id,
@@ -57,7 +63,10 @@ async def list_memberships(db: AsyncSession, user_id: uuid.UUID) -> list[Members
         )
         .order_by(Organisation.name)
     )
-    return [Membership(*row) for row in rows.all()]
+    return [
+        Membership(org_id, name, slug, membership_id, await load_grants(db, membership_id))
+        for org_id, name, slug, membership_id in rows.all()
+    ]
 
 
 async def login(

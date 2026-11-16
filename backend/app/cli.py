@@ -24,8 +24,11 @@ from email_validator import EmailNotValidError, validate_email
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+import app.models  # noqa: F401  (registers every model so foreign keys resolve)
 from app.core.config import get_settings
 from app.core.security import MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, hash_password
+from app.modules.access.models import UserRole
+from app.modules.access.service import seed_system_roles, system_role
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import User
 from app.modules.organisations.models import Organisation, OrganisationUser, Role
@@ -57,7 +60,17 @@ async def bootstrap_organisation(args: argparse.Namespace, password: str) -> Non
             )
             db.add(org)
             await db.flush()
-            db.add(OrganisationUser(organisation_id=org.id, user_id=user.id, role=Role.OWNER.value))
+            roles = await seed_system_roles(db, org.id)
+            membership = OrganisationUser(organisation_id=org.id, user_id=user.id)
+            db.add(membership)
+            await db.flush()
+            db.add(
+                UserRole(
+                    organisation_id=org.id,
+                    membership_id=membership.id,
+                    role_id=roles[Role.OWNER.value].id,
+                )
+            )
             db.add(
                 AuditLog(
                     organisation_id=org.id,
@@ -96,8 +109,12 @@ async def add_member(args: argparse.Namespace, password: str | None) -> None:
                 )
             )
             if existing is not None:
-                raise SystemExit(f"{email} is already a member of {org.slug} ({existing.role})")
-            db.add(OrganisationUser(organisation_id=org.id, user_id=user.id, role=args.role))
+                raise SystemExit(f"{email} is already a member of {org.slug}")
+            membership = OrganisationUser(organisation_id=org.id, user_id=user.id)
+            db.add(membership)
+            await db.flush()
+            role = await system_role(db, org.id, args.role)
+            db.add(UserRole(organisation_id=org.id, membership_id=membership.id, role_id=role.id))
             db.add(
                 AuditLog(
                     organisation_id=org.id,

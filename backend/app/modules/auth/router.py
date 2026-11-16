@@ -10,7 +10,6 @@ from app.modules.audit import service as audit
 from app.modules.auth import service
 from app.modules.auth.deps import DB, Auth, client_ip
 from app.modules.auth.models import User
-from app.modules.auth.permissions import permissions_for
 from app.modules.auth.schemas import (
     ActiveOrganisationOut,
     LoginRequest,
@@ -101,7 +100,7 @@ async def logout(auth: Auth, request: Request, response: Response, db: DB) -> No
 
 @router.get("/me", response_model=MeResponse)
 async def me(auth: Auth, db: DB) -> MeResponse:
-    return await _me(db, auth.user, auth.organisation_id, auth.role)
+    return await _me(db, auth.user, auth.organisation_id)
 
 
 @router.post("/active-organisation", response_model=MeResponse)
@@ -126,10 +125,10 @@ async def switch_organisation(
         entity_id=auth.session.id,
         ip_address=client_ip(request),
     )
-    return await _me(db, auth.user, match.organisation_id, match.role)
+    return await _me(db, auth.user, match.organisation_id)
 
 
-async def _me(db: DB, user: User, org_id: uuid.UUID | None, role: str | None = None) -> MeResponse:
+async def _me(db: DB, user: User, org_id: uuid.UUID | None) -> MeResponse:
     memberships = await service.list_memberships(db, user.id)
     active = None
     if org_id is not None:
@@ -142,7 +141,12 @@ async def _me(db: DB, user: User, org_id: uuid.UUID | None, role: str | None = N
                 name=org.name,
                 slug=org.slug,
                 role=current.role,
-                permissions=sorted(p.value for p in permissions_for(role or current.role)),
+                role_label=current.grants.label,
+                permissions=sorted(p.value for p in current.grants.everywhere),
+                property_permissions={
+                    pid: sorted(p.value for p in perms)
+                    for pid, perms in current.grants.by_property.items()
+                },
             )
     return MeResponse(
         user=UserOut.model_validate(user),
@@ -152,6 +156,7 @@ async def _me(db: DB, user: User, org_id: uuid.UUID | None, role: str | None = N
                 organisation_name=m.organisation_name,
                 organisation_slug=m.organisation_slug,
                 role=m.role,
+                role_label=m.grants.label,
             )
             for m in memberships
         ],

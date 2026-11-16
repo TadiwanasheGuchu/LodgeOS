@@ -9,7 +9,13 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.errors import conflict_from_integrity, not_found
 from app.modules.audit import service as audit
-from app.modules.auth.deps import DB, AuthContext, client_ip, require_permission
+from app.modules.auth.deps import (
+    DB,
+    AuthContext,
+    client_ip,
+    require_permission,
+    require_permission_anywhere,
+)
 from app.modules.auth.permissions import Permission
 from app.modules.organisations.models import Organisation
 from app.modules.properties.models import Building, Property, RecordStatus
@@ -27,8 +33,12 @@ from app.modules.rooms.models import Room, RoomType
 
 router = APIRouter(prefix="/api/v1", tags=["properties"])
 
-CanView = Annotated[AuthContext, Depends(require_permission(Permission.PROPERTIES_VIEW))]
-CanManage = Annotated[AuthContext, Depends(require_permission(Permission.PROPERTIES_MANAGE))]
+CanView = Annotated[AuthContext, Depends(require_permission_anywhere(Permission.PROPERTIES_VIEW))]
+CanManageSome = Annotated[
+    AuthContext, Depends(require_permission_anywhere(Permission.PROPERTIES_MANAGE))
+]
+# Creating a property needs the permission for every property, not just one.
+CanCreate = Annotated[AuthContext, Depends(require_permission(Permission.PROPERTIES_MANAGE))]
 
 PROPERTY_CONFLICTS = {
     "uq_properties_organisation_id_slug": "Another property already uses this short name (slug).",
@@ -38,11 +48,18 @@ BUILDING_CONFLICTS = {
 }
 
 
-async def get_property(db: DB, property_id: uuid.UUID) -> Property:
-    # RLS limits this to the caller's organisation; another tenant's id is simply not found.
+async def get_property(
+    db: DB, property_id: uuid.UUID, auth: AuthContext, permission: Permission
+) -> Property:
+    """The property, if the caller holds ``permission`` there.
+
+    RLS limits the lookup to the caller's organisation, so another tenant's id is simply
+    not found; a property in the same organisation the caller cannot access is also 404.
+    """
     prop = await db.get(Property, property_id)
     if prop is None:
         raise not_found("Property")
+    auth.require_for_property(permission, prop.id)
     return prop
 
 
@@ -70,6 +87,9 @@ async def list_properties(
     )
     if not include_archived:
         stmt = stmt.where(Property.status == RecordStatus.ACTIVE)
+    scope = auth.grants.property_scope(Permission.PROPERTIES_VIEW)
+    if scope is not None:
+        stmt = stmt.where(Property.id.in_(scope))
     rows = (await db.execute(stmt)).all()
     return [
         PropertySummary(
@@ -81,7 +101,7 @@ async def list_properties(
 
 @router.post("/properties", response_model=PropertyOut, status_code=status.HTTP_201_CREATED)
 async def create_property(
-    body: PropertyCreate, auth: CanManage, request: Request, db: DB
+    body: PropertyCreate, auth: CanCreate, request: Request, db: DB
 ) -> Property:
     org = await db.get(Organisation, auth.organisation_id)
     assert org is not None
@@ -129,14 +149,14 @@ async def create_property(
 
 @router.get("/properties/{property_id}", response_model=PropertyOut)
 async def read_property(property_id: uuid.UUID, auth: CanView, db: DB) -> Property:
-    return await get_property(db, property_id)
+    return await get_property(db, property_id, auth, Permission.PROPERTIES_VIEW)
 
 
 @router.patch("/properties/{property_id}", response_model=PropertyOut)
 async def update_property(
-    property_id: uuid.UUID, body: PropertyUpdate, auth: CanManage, request: Request, db: DB
+    property_id: uuid.UUID, body: PropertyUpdate, auth: CanManageSome, request: Request, db: DB
 ) -> Property:
-    prop = await get_property(db, property_id)
+    prop = await get_property(db, property_id, auth, Permission.PROPERTIES_MANAGE)
     changes = body.model_dump(exclude_unset=True)
     for required in (
         "name",
@@ -171,7 +191,7 @@ async def update_property(
 
 @router.get("/properties/{property_id}/buildings", response_model=list[BuildingOut])
 async def list_buildings(property_id: uuid.UUID, auth: CanView, db: DB) -> list[Building]:
-    await get_property(db, property_id)
+    await get_property(db, property_id, auth, Permission.PROPERTIES_VIEW)
     rows = await db.scalars(
         select(Building)
         .where(Building.property_id == property_id)
@@ -186,9 +206,9 @@ async def list_buildings(property_id: uuid.UUID, auth: CanView, db: DB) -> list[
     status_code=status.HTTP_201_CREATED,
 )
 async def create_building(
-    property_id: uuid.UUID, body: BuildingCreate, auth: CanManage, request: Request, db: DB
+    property_id: uuid.UUID, body: BuildingCreate, auth: CanManageSome, request: Request, db: DB
 ) -> Building:
-    prop = await get_property(db, property_id)
+    prop = await get_property(db, property_id, auth, Permission.PROPERTIES_MANAGE)
     building = Building(
         organisation_id=prop.organisation_id, property_id=prop.id, **body.model_dump()
     )
@@ -213,11 +233,12 @@ async def create_building(
 
 @router.patch("/buildings/{building_id}", response_model=BuildingOut)
 async def update_building(
-    building_id: uuid.UUID, body: BuildingUpdate, auth: CanManage, request: Request, db: DB
+    building_id: uuid.UUID, body: BuildingUpdate, auth: CanManageSome, request: Request, db: DB
 ) -> Building:
     building = await db.get(Building, building_id)
     if building is None:
         raise not_found("Building")
+    auth.require_for_property(Permission.PROPERTIES_MANAGE, building.property_id)
     changes = body.model_dump(exclude_unset=True)
     if changes.get("name", "") is None or ("status" in changes and changes["status"] is None):
         raise HTTPException(status_code=422, detail="Name and status cannot be empty.")

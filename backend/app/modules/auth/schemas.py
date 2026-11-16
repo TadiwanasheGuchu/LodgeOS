@@ -29,7 +29,9 @@ class MembershipOut(BaseModel):
     organisation_id: uuid.UUID
     organisation_name: str
     organisation_slug: str
+    # Highest system role key ("owner", "manager", ...), or "" if only custom roles.
     role: str
+    role_label: str
 
 
 class ActiveOrganisationOut(BaseModel):
@@ -37,7 +39,11 @@ class ActiveOrganisationOut(BaseModel):
     name: str
     slug: str
     role: str
+    role_label: str
+    # Granted for every property.
     permissions: list[str]
+    # Granted for specific properties only: {property_id: [permission, ...]}.
+    property_permissions: dict[uuid.UUID, list[str]]
 
 
 class MeResponse(BaseModel):
