@@ -15,6 +15,7 @@ from app.core.security import (
     password_needs_rehash,
     verify_password,
 )
+from app.modules.access.service import Grants, load_grants
 from app.modules.audit import service as audit
 from app.modules.auth.models import User, UserSession
 from app.modules.organisations.models import (
@@ -38,7 +39,12 @@ class Membership:
     organisation_id: uuid.UUID
     organisation_name: str
     organisation_slug: str
-    role: str
+    membership_id: uuid.UUID
+    grants: Grants
+
+    @property
+    def role(self) -> str:
+        return self.grants.primary_role_key or ""
 
 
 def utcnow() -> datetime:
@@ -48,7 +54,7 @@ def utcnow() -> datetime:
 async def list_memberships(db: AsyncSession, user_id: uuid.UUID) -> list[Membership]:
     """Active memberships in active organisations. Requires app.current_user_id to be set."""
     rows = await db.execute(
-        select(Organisation.id, Organisation.name, Organisation.slug, OrganisationUser.role)
+        select(Organisation.id, Organisation.name, Organisation.slug, OrganisationUser.id)
         .join(OrganisationUser, OrganisationUser.organisation_id == Organisation.id)
         .where(
             OrganisationUser.user_id == user_id,
@@ -57,7 +63,10 @@ async def list_memberships(db: AsyncSession, user_id: uuid.UUID) -> list[Members
         )
         .order_by(Organisation.name)
     )
-    return [Membership(*row) for row in rows.all()]
+    return [
+        Membership(org_id, name, slug, membership_id, await load_grants(db, membership_id))
+        for org_id, name, slug, membership_id in rows.all()
+    ]
 
 
 async def login(
@@ -105,6 +114,30 @@ async def login(
     # With exactly one organisation, start there. Otherwise the user picks one.
     active_org = memberships[0].organisation_id if len(memberships) == 1 else None
 
+    token, session = await open_session(db, user, active_org, ip, user_agent)
+
+    await set_tenant_context(db, user_id=user.id, organisation_id=active_org)
+    await audit.record(
+        db,
+        action="auth.login",
+        organisation_id=active_org,
+        actor_user_id=user.id,
+        entity_type="user_session",
+        entity_id=session.id,
+        ip_address=ip,
+    )
+    return token, user, session
+
+
+async def open_session(
+    db: AsyncSession,
+    user: User,
+    active_org: uuid.UUID | None,
+    ip: str | None,
+    user_agent: str | None,
+) -> tuple[str, UserSession]:
+    """Create a server-side session. Returns the raw token for the cookie."""
+    settings = get_settings()
     token = new_token()
     now = utcnow()
     session = UserSession(
@@ -119,18 +152,7 @@ async def login(
     )
     db.add(session)
     await db.flush()
-
-    await set_tenant_context(db, user_id=user.id, organisation_id=active_org)
-    await audit.record(
-        db,
-        action="auth.login",
-        organisation_id=active_org,
-        actor_user_id=user.id,
-        entity_type="user_session",
-        entity_id=session.id,
-        ip_address=ip,
-    )
-    return token, user, session
+    return token, session
 
 
 async def resolve_session(db: AsyncSession, token: str) -> tuple[UserSession, User] | None:

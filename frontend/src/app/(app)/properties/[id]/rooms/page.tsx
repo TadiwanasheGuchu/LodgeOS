@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { accessOf } from "@/lib/access";
 import { apiGet, requireOrganisation } from "@/lib/server/api";
 import { loadProperty } from "@/lib/server/properties";
 import type { Building, Room, RoomType } from "@/lib/types";
@@ -9,8 +10,8 @@ export const metadata: Metadata = { title: "Rooms" };
 export default async function PropertyRoomsPage({ params }: PageProps<"/properties/[id]/rooms">) {
   const { id } = await params;
   const [me, property] = await Promise.all([requireOrganisation(), loadProperty(id)]);
-  const perms = me.active_organisation.permissions;
-  if (!perms.includes("rooms.view")) {
+  const access = accessOf(me);
+  if (!access.canAt("rooms.view", property.id)) {
     return <p className="text-sm text-muted">Your role does not include room details.</p>;
   }
   const [rooms, roomTypes, buildings] = await Promise.all([
@@ -24,7 +25,7 @@ export default async function PropertyRoomsPage({ params }: PageProps<"/properti
       rooms={rooms}
       roomTypes={roomTypes.filter((t) => t.status === "active")}
       buildings={buildings.filter((b) => b.status === "active")}
-      canManage={perms.includes("rooms.manage")}
+      canManage={access.canAt("rooms.manage", property.id)}
     />
   );
 }

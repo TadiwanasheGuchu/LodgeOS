@@ -18,6 +18,13 @@ const LABELS: Record<string, string> = {
   "room.updated": "Changed a room",
   "room.housekeeping_changed": "Changed room cleaning status",
   "room.maintenance_changed": "Changed room maintenance status",
+  "member.role_added": "Gave a role",
+  "member.role_removed": "Removed a role",
+  "member.disabled": "Turned off someone's access",
+  "member.enabled": "Turned on someone's access",
+  "invitation.created": "Invited someone",
+  "invitation.revoked": "Withdrew an invitation",
+  "invitation.accepted": "Accepted an invitation and joined",
 };
 
 const FIELD_LABELS: Record<string, string> = {
@@ -56,6 +63,12 @@ export function describeChanges(entry: AuditLogEntry): string[] {
   }
   if (entry.action === "room.bulk_created" && Array.isArray(d.numbers)) {
     return [`Rooms ${(d.numbers as string[]).join(", ")}`];
+  }
+  if (entry.action === "member.role_added" || entry.action === "member.role_removed") {
+    return [String(d.role)];
+  }
+  if (entry.action.startsWith("invitation.") && d.email) {
+    return [d.role ? `${String(d.email)} as ${String(d.role)}` : String(d.email)];
   }
   if (!entry.action.endsWith(".updated")) return [];
   const before = (entry.data.before ?? {}) as Record<string, unknown>;

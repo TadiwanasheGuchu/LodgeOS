@@ -1,3 +1,4 @@
+import type { Access } from "@/lib/access";
 import type { Permission } from "@/lib/types";
 
 export type NavIcon = "overview" | "settings" | "team" | "activity" | "rooms" | "properties";
@@ -20,6 +21,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/settings", label: "Organisation", icon: "settings", permission: "organisation.view" },
 ];
 
-export function navFor(permissions: Permission[]): NavItem[] {
-  return NAV_ITEMS.filter((item) => item.permission === null || permissions.includes(item.permission));
+/** Screens the person can open: permission held for at least one property. */
+export function navFor(access: Access): NavItem[] {
+  return NAV_ITEMS.filter((item) => item.permission === null || access.canAnywhere(item.permission));
 }

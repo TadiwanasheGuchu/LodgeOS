@@ -16,11 +16,10 @@ from app.modules.audit.models import AuditLog
 from app.modules.auth.deps import DB, AuthContext, client_ip, require_permission
 from app.modules.auth.models import User
 from app.modules.auth.permissions import Permission
-from app.modules.organisations.models import Organisation, OrganisationUser
+from app.modules.organisations.models import Organisation
 from app.modules.organisations.schemas import (
     AuditLogOut,
     AuditLogPage,
-    MemberOut,
     OrganisationOut,
     OrganisationUpdate,
 )
@@ -70,28 +69,6 @@ async def update_organisation(
     )
     await db.refresh(org)
     return org
-
-
-@router.get("/members", response_model=list[MemberOut])
-async def list_members(auth: CanViewMembers, db: DB) -> list[MemberOut]:
-    rows = await db.execute(
-        select(OrganisationUser, User)
-        .join(User, User.id == OrganisationUser.user_id)
-        .where(OrganisationUser.organisation_id == auth.organisation_id)
-        .order_by(User.full_name)
-    )
-    return [
-        MemberOut(
-            id=m.id,
-            user_id=u.id,
-            full_name=u.full_name,
-            email=u.email,
-            role=m.role,
-            status=m.status,
-            created_at=m.created_at,
-        )
-        for m, u in rows.all()
-    ]
 
 
 @router.get("/audit-logs", response_model=AuditLogPage)

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { PropertyForm } from "@/components/properties/property-form";
+import { accessOf } from "@/lib/access";
 import { apiGet, requireOrganisation } from "@/lib/server/api";
 import type { Organisation } from "@/lib/types";
 
@@ -9,7 +10,7 @@ export const metadata: Metadata = { title: "Add property" };
 
 export default async function NewPropertyPage() {
   const me = await requireOrganisation();
-  if (!me.active_organisation.permissions.includes("properties.manage")) redirect("/properties");
+  if (!accessOf(me).can("properties.manage")) redirect("/properties");
   const org = await apiGet<Organisation>("/api/v1/organisation");
   return (
     <>

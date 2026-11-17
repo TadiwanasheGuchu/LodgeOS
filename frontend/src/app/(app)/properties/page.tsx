@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { accessOf } from "@/lib/access";
 import { apiGet, requireOrganisation } from "@/lib/server/api";
 import { PROPERTY_TYPE_LABELS, type PropertySummary } from "@/lib/types";
 
@@ -12,10 +13,10 @@ export const metadata: Metadata = { title: "Properties" };
 
 export default async function PropertiesPage() {
   const me = await requireOrganisation();
-  const perms = me.active_organisation.permissions;
-  if (!perms.includes("properties.view")) redirect("/");
+  const access = accessOf(me);
+  if (!access.canAnywhere("properties.view")) redirect("/");
   const properties = await apiGet<PropertySummary[]>("/api/v1/properties");
-  const canManage = perms.includes("properties.manage");
+  const canManage = access.can("properties.manage");
 
   return (
     <>

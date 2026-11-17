@@ -14,12 +14,8 @@ class OrganisationStatus(enum.StrEnum):
 
 
 class Role(enum.StrEnum):
-    """Organisation-level staff roles.
-
-    Phase 0 keeps roles as a fixed set mapped to permissions in code
-    (see app.modules.auth.permissions). Phase 1 replaces this with the roles,
-    permissions and user_roles tables and property-level grants (ADR-0004).
-    """
+    """Keys of the system roles every organisation gets. Assignments live in
+    ``user_roles`` (app.modules.access); this enum names the built-in ones."""
 
     OWNER = "owner"
     MANAGER = "manager"
@@ -65,7 +61,7 @@ class OrganisationUser(TimestampMixin, Base):
     __tablename__ = "organisation_users"
     __table_args__ = (
         UniqueConstraint("organisation_id", "user_id"),
-        CheckConstraint(f"role IN ({_values(Role)})", name="role"),
+        UniqueConstraint("id", "organisation_id", name="uq_organisation_users_id_org"),
         CheckConstraint(f"status IN ({_values(MembershipStatus)})", name="status"),
     )
 
@@ -76,7 +72,6 @@ class OrganisationUser(TimestampMixin, Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True
     )
-    role: Mapped[str] = mapped_column(String(32), nullable=False)
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, default=MembershipStatus.ACTIVE.value
     )

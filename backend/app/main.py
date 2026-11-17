@@ -12,6 +12,8 @@ from app.core.config import get_settings
 from app.core.csrf import CSRFMiddleware
 from app.core.db import dispose_engine, get_sessionmaker
 from app.core.redis import close_redis, get_redis
+from app.modules.access.invitations import router as invitations_router
+from app.modules.access.router import router as access_router
 from app.modules.auth.router import router as auth_router
 from app.modules.organisations.router import router as organisation_router
 from app.modules.properties.router import router as properties_router
@@ -85,6 +87,8 @@ def create_app() -> FastAPI:
     app.include_router(organisation_router)
     app.include_router(properties_router)
     app.include_router(rooms_router)
+    app.include_router(access_router)
+    app.include_router(invitations_router)
     return app
 
 

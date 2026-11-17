@@ -7,5 +7,6 @@ One file per significant decision: `NNNN-short-title.md` with Status, Context, D
 | 0001 | Modular monolith | Accepted |
 | 0002 | Tenant isolation: server-side session plus PostgreSQL RLS | Accepted |
 | 0003 | Server-side sessions with cookie and CSRF token | Accepted |
-| 0004 | Fixed role map in Phase 0 | Accepted (to be superseded in Phase 1) |
+| 0004 | Fixed role map in Phase 0 | Superseded by 0006 |
 | 0005 | Frontend served same-origin, rendered per request | Accepted |
+| 0006 | Database roles and property-level access | Accepted |

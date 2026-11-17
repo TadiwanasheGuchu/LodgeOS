@@ -24,6 +24,17 @@ class Permission(enum.StrEnum):
     ROOMS_MAINTENANCE = "rooms.maintenance_update"
 
 
+# Permissions about a property's setup and rooms. When a role is granted for one property,
+# these apply to that property only.
+PROPERTY_PERMISSIONS: frozenset[Permission] = frozenset(
+    p for p in Permission if p.value.startswith(("properties.", "rooms."))
+)
+
+# Organisation-level permissions that any role grant carries organisation-wide, because
+# every staff member needs them to use the app at all. Sensitive organisation-level
+# permissions (staff, activity log, settings) need an organisation-wide grant.
+GRANTED_BY_ANY_ROLE: frozenset[Permission] = frozenset({Permission.ORGANISATION_VIEW})
+
 ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
     Role.OWNER: frozenset(Permission),
     Role.MANAGER: frozenset(

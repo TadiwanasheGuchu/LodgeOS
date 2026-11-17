@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.errors import conflict_from_integrity, not_found
 from app.modules.audit import service as audit
-from app.modules.auth.deps import DB, AuthContext, client_ip, require_permission
+from app.modules.auth.deps import DB, AuthContext, client_ip, require_permission_anywhere
 from app.modules.auth.permissions import Permission
 from app.modules.properties.models import Building, RecordStatus
 from app.modules.properties.router import get_property
@@ -30,10 +30,14 @@ from app.modules.rooms.schemas import (
 
 router = APIRouter(prefix="/api/v1", tags=["rooms"])
 
-CanView = Annotated[AuthContext, Depends(require_permission(Permission.ROOMS_VIEW))]
-CanManage = Annotated[AuthContext, Depends(require_permission(Permission.ROOMS_MANAGE))]
-CanHousekeep = Annotated[AuthContext, Depends(require_permission(Permission.ROOMS_HOUSEKEEPING))]
-CanMaintain = Annotated[AuthContext, Depends(require_permission(Permission.ROOMS_MAINTENANCE))]
+CanView = Annotated[AuthContext, Depends(require_permission_anywhere(Permission.ROOMS_VIEW))]
+CanManage = Annotated[AuthContext, Depends(require_permission_anywhere(Permission.ROOMS_MANAGE))]
+CanHousekeep = Annotated[
+    AuthContext, Depends(require_permission_anywhere(Permission.ROOMS_HOUSEKEEPING))
+]
+CanMaintain = Annotated[
+    AuthContext, Depends(require_permission_anywhere(Permission.ROOMS_MAINTENANCE))
+]
 
 ROOM_TYPE_CONFLICTS = {
     "uq_room_types_property_id_code": "Another room type at this property already uses that code.",
@@ -61,7 +65,7 @@ async def _flush(db: DB, conflicts: dict[str, str]) -> None:
 
 @router.get("/properties/{property_id}/room-types", response_model=list[RoomTypeOut])
 async def list_room_types(property_id: uuid.UUID, auth: CanView, db: DB) -> list[RoomTypeOut]:
-    await get_property(db, property_id)
+    await get_property(db, property_id, auth, Permission.ROOMS_VIEW)
     counts = (
         select(Room.room_type_id, func.count().label("n"))
         .where(Room.status == RecordStatus.ACTIVE)
@@ -87,7 +91,7 @@ async def list_room_types(property_id: uuid.UUID, auth: CanView, db: DB) -> list
 async def create_room_type(
     property_id: uuid.UUID, body: RoomTypeCreate, auth: CanManage, request: Request, db: DB
 ) -> RoomType:
-    prop = await get_property(db, property_id)
+    prop = await get_property(db, property_id, auth, Permission.ROOMS_MANAGE)
     rt = RoomType(organisation_id=prop.organisation_id, property_id=prop.id, **body.model_dump())
     db.add(rt)
     await _flush(db, ROOM_TYPE_CONFLICTS)
@@ -111,6 +115,7 @@ async def update_room_type(
     rt = await db.get(RoomType, room_type_id)
     if rt is None:
         raise not_found("Room type")
+    auth.require_for_property(Permission.ROOMS_MANAGE, rt.property_id)
     changes = body.model_dump(exclude_unset=True)
     if any(v is None for k, v in changes.items() if k not in {"description", "bed_configuration"}):
         raise HTTPException(status_code=422, detail="Only description and beds can be cleared.")
@@ -219,7 +224,7 @@ async def _check_refs(
 async def list_rooms(
     property_id: uuid.UUID, auth: CanView, db: DB, include_archived: bool = False
 ) -> list[RoomOut]:
-    await get_property(db, property_id)
+    await get_property(db, property_id, auth, Permission.ROOMS_VIEW)
     stmt = _room_query().where(Room.property_id == property_id)
     if not include_archived:
         stmt = stmt.where(Room.status == RecordStatus.ACTIVE)
@@ -239,7 +244,7 @@ async def list_rooms(
 async def create_room(
     property_id: uuid.UUID, body: RoomCreate, auth: CanManage, request: Request, db: DB
 ) -> RoomOut:
-    prop = await get_property(db, property_id)
+    prop = await get_property(db, property_id, auth, Permission.ROOMS_MANAGE)
     await _check_refs(db, prop.id, body.room_type_id, body.building_id)
     room = Room(organisation_id=prop.organisation_id, property_id=prop.id, **body.model_dump())
     db.add(room)
@@ -266,7 +271,7 @@ async def create_rooms_bulk(
     property_id: uuid.UUID, body: RoomBulkCreate, auth: CanManage, request: Request, db: DB
 ) -> list[RoomOut]:
     """Create several rooms of one type at once. All or nothing."""
-    prop = await get_property(db, property_id)
+    prop = await get_property(db, property_id, auth, Permission.ROOMS_MANAGE)
     await _check_refs(db, prop.id, body.room_type_id, body.building_id)
     existing = set(
         (
@@ -311,10 +316,11 @@ async def create_rooms_bulk(
     return [by_id[i] for i in ids]
 
 
-async def _get_room(db: DB, room_id: uuid.UUID) -> Room:
+async def _get_room(db: DB, room_id: uuid.UUID, auth: AuthContext, permission: Permission) -> Room:
     room = await db.get(Room, room_id)
     if room is None:
         raise not_found("Room")
+    auth.require_for_property(permission, room.property_id)
     return room
 
 
@@ -322,7 +328,7 @@ async def _get_room(db: DB, room_id: uuid.UUID) -> Room:
 async def update_room(
     room_id: uuid.UUID, body: RoomUpdate, auth: CanManage, request: Request, db: DB
 ) -> RoomOut:
-    room = await _get_room(db, room_id)
+    room = await _get_room(db, room_id, auth, Permission.ROOMS_MANAGE)
     changes = body.model_dump(exclude_unset=True)
     for required in ("number", "room_type_id", "status"):
         if required in changes and changes[required] is None:
@@ -348,7 +354,7 @@ async def update_room(
 async def set_housekeeping_status(
     room_id: uuid.UUID, body: HousekeepingUpdate, auth: CanHousekeep, request: Request, db: DB
 ) -> RoomOut:
-    room = await _get_room(db, room_id)
+    room = await _get_room(db, room_id, auth, Permission.ROOMS_HOUSEKEEPING)
     previous = room.housekeeping_status
     room.housekeeping_status = body.housekeeping_status
     room.housekeeping_updated_at = _now()
@@ -371,7 +377,7 @@ async def set_housekeeping_status(
 async def set_maintenance_status(
     room_id: uuid.UUID, body: MaintenanceUpdate, auth: CanMaintain, request: Request, db: DB
 ) -> RoomOut:
-    room = await _get_room(db, room_id)
+    room = await _get_room(db, room_id, auth, Permission.ROOMS_MAINTENANCE)
     previous = room.maintenance_status
     room.maintenance_status = body.maintenance_status
     room.maintenance_reason = body.reason

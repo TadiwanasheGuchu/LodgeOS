@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PropertyForm } from "@/components/properties/property-form";
 import { COUNTRIES } from "@/lib/reference-data";
+import { accessOf } from "@/lib/access";
 import { apiGet, requireOrganisation } from "@/lib/server/api";
 import type { Organisation } from "@/lib/types";
 import { loadProperty } from "@/lib/server/properties";
@@ -15,7 +16,7 @@ export default async function PropertyDetailsPage({ params }: PageProps<"/proper
     loadProperty(id),
     apiGet<Organisation>("/api/v1/organisation"),
   ]);
-  const canManage = me.active_organisation.permissions.includes("properties.manage");
+  const canManage = accessOf(me).canAt("properties.manage", property.id);
 
   if (!canManage) {
     const address = [property.address_line1, property.address_line2, property.city, property.region, property.postal_code]

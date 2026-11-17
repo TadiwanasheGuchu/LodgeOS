@@ -131,6 +131,18 @@ All four use `enable_tenant_rls` (SELECT, INSERT, UPDATE for the app role; no DE
 
 Occupancy is deliberately not stored: it will be derived from reservations (Phase 2), so it cannot drift from bookings. Sellability will combine room status, maintenance status and allocations.
 
+## Tables (Phase 1.3)
+
+`organisation_users.role` was removed; roles now live in these tables (ADR-0006). The migration converted each membership's role into an organisation-wide `user_roles` row, and its downgrade restores the column.
+
+| Table | Key columns | RLS / privileges |
+|---|---|---|
+| `permissions` | `code` unique, `description` | Global catalogue; app role SELECT only |
+| `roles` | `organisation_id`, `key` (system role key or NULL), `name`, `is_system`; unique `(organisation_id, name)` and `(organisation_id, key)` | Tenant RLS, plus read of roles the user holds anywhere |
+| `role_permissions` | PK `(role_id, permission_id)`; `(role_id, organisation_id)` → `roles` | Tenant RLS; SELECT, INSERT, DELETE |
+| `user_roles` | `membership_id`, `role_id`, `property_id` (NULL = all properties), `created_by`; unique `(membership_id, role_id, property_id)` with NULLS NOT DISTINCT; composite FKs keep membership, role and property in one organisation | Tenant RLS, plus read of the user's own rows in any organisation; SELECT, INSERT, DELETE |
+| `invitations` | `email`, `full_name`, `role_id`, `property_id`, `token_hash` (SHA-256, unique), `expires_at`, `accepted_at`/`by`, `revoked_at`, `created_by` | Tenant RLS. `invitation_for_token(bytea)` is SECURITY DEFINER and returns only ids, for use before sign-in |
+
 ## Planned tables
 
-Next: `roles`, `permissions`, `user_roles` with property scopes (1.3), `rate_plans`, `seasonal_rates`, taxes (1.4).
+Next: `rate_plans`, `seasonal_rates`, taxes (1.4).

@@ -54,8 +54,8 @@ test("manager sees the team", async ({ page }) => {
   await page.getByRole("button", { name: new RegExp(seed.lodgeName) }).click();
   await expect(page.getByRole("heading", { name: /Hello, Mpho/ })).toBeVisible();
   await page.goto("/team");
-  await expect(page.getByRole("cell", { name: "Rudo Reception" })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "Olivia Owner" })).toBeVisible();
+  await expect(page.getByText("Rudo Reception", { exact: true })).toBeVisible();
+  await expect(page.getByText("Olivia Owner", { exact: true })).toBeVisible();
 });
 
 test("a user in two organisations chooses one and can switch", async ({ page }) => {

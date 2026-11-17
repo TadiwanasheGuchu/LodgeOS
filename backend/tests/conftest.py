@@ -37,11 +37,14 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engin
 from app.core.redis import get_redis  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
 from app.main import app  # noqa: E402
+from app.modules.access.models import UserRole  # noqa: E402
+from app.modules.access.service import seed_system_roles, system_role  # noqa: E402
 from app.modules.auth.models import User  # noqa: E402
 from app.modules.organisations.models import Organisation, OrganisationUser, Role  # noqa: E402
 
 PASSWORD = "correct horse battery staple"
 _TABLES = (
+    "user_roles, role_permissions, roles, "
     "rooms, room_types, buildings, properties, "
     "audit_logs, user_sessions, organisation_users, users, organisations"
 )
@@ -156,17 +159,48 @@ class Factory:
                 country_code="NA",
             )
             db.add(org)
+            await db.flush()
+            await seed_system_roles(db, org.id)
         return org
 
     async def member(
-        self, org: Organisation, user: User, role: Role = Role.OWNER, status: str = "active"
+        self,
+        org: Organisation,
+        user: User,
+        role: Role = Role.OWNER,
+        status: str = "active",
+        property_id: uuid.UUID | None = None,
     ) -> OrganisationUser:
         async with AsyncSession(self.engine, expire_on_commit=False) as db, db.begin():
-            m = OrganisationUser(
-                organisation_id=org.id, user_id=user.id, role=role.value, status=status
-            )
+            m = OrganisationUser(organisation_id=org.id, user_id=user.id, status=status)
             db.add(m)
+            await db.flush()
+            await self._grant(db, org.id, m.id, role, property_id)
         return m
+
+    async def grant(
+        self, membership: OrganisationUser, role: Role, property_id: uuid.UUID | None = None
+    ) -> None:
+        async with AsyncSession(self.engine, expire_on_commit=False) as db, db.begin():
+            await self._grant(db, membership.organisation_id, membership.id, role, property_id)
+
+    @staticmethod
+    async def _grant(
+        db: AsyncSession,
+        org_id: uuid.UUID,
+        membership_id: uuid.UUID,
+        role: Role,
+        property_id: uuid.UUID | None,
+    ) -> None:
+        role_record = await system_role(db, org_id, role.value)
+        db.add(
+            UserRole(
+                organisation_id=org_id,
+                membership_id=membership_id,
+                role_id=role_record.id,
+                property_id=property_id,
+            )
+        )
 
     async def execute(self, sql: str, **params: object) -> None:
         async with self.engine.begin() as conn:

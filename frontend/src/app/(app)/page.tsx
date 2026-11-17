@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { apiGet, requireOrganisation } from "@/lib/server/api";
-import { ROLE_LABELS, type Organisation, type Permission } from "@/lib/types";
+import { accessOf } from "@/lib/access";
+import type { Organisation, Permission } from "@/lib/types";
 import { PropertyClock } from "./property-clock";
 
 export const metadata: Metadata = { title: "Overview" };
@@ -42,7 +43,7 @@ export default async function OverviewPage() {
 
   return (
     <>
-      <PageHeader title={`Hello, ${firstName}`} description={`${org.name} · ${ROLE_LABELS[me.active_organisation.role]}`} />
+      <PageHeader title={`Hello, ${firstName}`} description={`${org.name} · ${me.active_organisation.role_label}`} />
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <section aria-labelledby="setup-heading" className="rounded-lg border border-line bg-white">
@@ -51,7 +52,7 @@ export default async function OverviewPage() {
           </h2>
           <ul className="divide-y divide-line text-sm">
             {links
-              .filter((l) => !l.permission || me.active_organisation.permissions.includes(l.permission))
+              .filter((l) => !l.permission || accessOf(me).canAnywhere(l.permission))
               .map((l) => (
                 <li key={l.href}>
                   <Link href={l.href} className="flex items-center gap-3 px-5 py-3.5 hover:bg-mist">

@@ -19,6 +19,9 @@ This document records what is implemented and verified, and what is planned. Do 
 | Audit logging | Append-only; written in the same transaction as the change; failed sign-ins recorded | `test_owner_updates_settings_and_change_is_audited` |
 | Security headers | `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Cache-Control: no-store` on API responses | `test_health` (partial) |
 | Container | API runs as a non-root user (uid 10001) | Manual check, milestone 0.2 |
+| Property-level access | Grants per property; unreachable properties are 404; escalation rule; last-owner protection | `tests/test_access.py` (11 tests) |
+| Cross-organisation visibility | RLS exposes a user's own rows in other organisations for the picker only; endpoints filter by the active organisation | `test_roles_from_other_organisations_are_never_listed_or_usable`, `test_own_rows_in_other_organisations_are_not_found` |
+| Invitations | SHA-256 tokens, 7-day single use, rate-limited lookup, existing accounts must prove ownership, SECURITY DEFINER lookup returning ids only | `tests/test_invitations.py` (5 tests), E2E `access.spec.ts` |
 | Dependency scanning | `pip-audit` (backend) and `npm audit --omit=dev` (frontend) in CI | CI jobs `dependency-audit`, `frontend` |
 | Content-Security-Policy | Per-request nonce CSP on every page (`frontend/src/proxy.ts`): `script-src 'self' 'nonce-…' 'strict-dynamic'`, `frame-ancestors 'none'`, `object-src 'none'`, `form-action 'self'`; no `unsafe-eval` in production | E2E `pages are served with a nonce-based CSP and run without violations` |
 | Same-origin API | The browser calls `/api/*` on the frontend origin, forwarded to the API, so cookies are first-party; `connect-src 'self'` | E2E sign-in tests |
@@ -26,7 +29,7 @@ This document records what is implemented and verified, and what is planned. Do 
 ## Known gaps (tracked)
 
 - **MFA**: not implemented. Planned as optional TOTP before pilot.
-- **Password reset and invitations**: not implemented; accounts are created by the operator CLI.
+- **Password reset**: not implemented. Invitations exist (link shared by the inviter); email delivery waits for an email provider.
 - **Session rotation on privilege change**: switching organisation keeps the same token. Acceptable because permissions are re-evaluated per request; revisit with MFA.
 - **Platform administrators**: no platform-admin role exists yet. When added, it must not get default access to tenant data (`CLAUDE.md` §8); support access will require an explicit, time-limited, audited grant.
 - **Rate limiting** covers sign-in only. General API rate limiting is planned at the reverse proxy and per-route.

@@ -98,8 +98,8 @@ async def test_rls_blocks_writes_into_another_tenant(app_engine: AsyncEngine, fa
         with pytest.raises(DBAPIError, match="row-level security"):
             await conn.execute(
                 text(
-                    "INSERT INTO organisation_users (id, organisation_id, user_id, role, status)"
-                    " VALUES (gen_random_uuid(), :org, :user, 'owner', 'active')"
+                    "INSERT INTO organisation_users (id, organisation_id, user_id, status)"
+                    " VALUES (gen_random_uuid(), :org, :user, 'active')"
                 ),
                 {"org": b.id, "user": ua.id},
             )

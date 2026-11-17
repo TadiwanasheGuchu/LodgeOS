@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { api, ApiError } from "@/lib/api-client";
-import { ROLE_LABELS, type Membership } from "@/lib/types";
+import type { Membership } from "@/lib/types";
 
 export function OrganisationPicker({
   memberships,
@@ -46,7 +46,7 @@ export function OrganisationPicker({
               <Building2 className="size-5 shrink-0 text-teal" aria-hidden />
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium text-forest">{m.organisation_name}</span>
-                <span className="block text-[13px] text-muted">{ROLE_LABELS[m.role]}</span>
+                <span className="block text-[13px] text-muted">{m.role_label}</span>
               </span>
               {pending === m.organisation_id ? (
                 <Loader2 className="size-4 animate-spin text-muted" aria-label="Opening" />

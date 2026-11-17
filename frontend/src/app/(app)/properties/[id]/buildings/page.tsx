@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { accessOf } from "@/lib/access";
 import { apiGet, requireOrganisation } from "@/lib/server/api";
 import { loadProperty } from "@/lib/server/properties";
 import type { Building } from "@/lib/types";
@@ -14,7 +15,7 @@ export default async function BuildingsPage({ params }: PageProps<"/properties/[
     <BuildingsManager
       propertyId={property.id}
       buildings={buildings}
-      canManage={me.active_organisation.permissions.includes("properties.manage")}
+      canManage={accessOf(me).canAt("properties.manage", property.id)}
     />
   );
 }
