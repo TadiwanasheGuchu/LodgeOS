@@ -10,3 +10,4 @@ One file per significant decision: `NNNN-short-title.md` with Status, Context, D
 | 0004 | Fixed role map in Phase 0 | Superseded by 0006 |
 | 0005 | Frontend served same-origin, rendered per request | Accepted |
 | 0006 | Database roles and property-level access | Accepted |
+| 0007 | Money representation and tax rounding | Accepted |

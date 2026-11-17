@@ -143,6 +143,19 @@ Occupancy is deliberately not stored: it will be derived from reservations (Phas
 | `user_roles` | `membership_id`, `role_id`, `property_id` (NULL = all properties), `created_by`; unique `(membership_id, role_id, property_id)` with NULLS NOT DISTINCT; composite FKs keep membership, role and property in one organisation | Tenant RLS, plus read of the user's own rows in any organisation; SELECT, INSERT, DELETE |
 | `invitations` | `email`, `full_name`, `role_id`, `property_id`, `token_hash` (SHA-256, unique), `expires_at`, `accepted_at`/`by`, `revoked_at`, `created_by` | Tenant RLS. `invitation_for_token(bytea)` is SECURITY DEFINER and returns only ids, for use before sign-in |
 
+## Tables (Phase 1.4)
+
+Money is `NUMERIC(12,2)`; tax rates are `NUMERIC(7,4)` percentages (ADR-0007). All four tables use tenant RLS and composite foreign keys to the same property.
+
+| Table | Key columns | Notes |
+|---|---|---|
+| `taxes` | `name` (unique per property), `rate_percent` (0 < rate < 100), `sort_order`, `status` | Archived taxes are not charged; no DELETE |
+| `rate_plans` | `name`, `code` (unique per property), `kind` (standard, corporate, promotional, package), `meal_plan`, `currency`, `prices_include_tax`, `min_stay_nights`, `max_stay_nights`, `stay_from`, `stay_to`, `status` | Currency copied from the property and stored; no DELETE |
+| `rate_plan_prices` | unique `(rate_plan_id, room_type_id)`; `base_price`, `weekend_price`, `extra_adult_price`, `extra_child_price` (all ≥ 0) | DELETE allowed (setup, not history) |
+| `seasonal_rates` | `rate_plan_id`, `room_type_id`, `name`, `start_date`, `end_date` (inclusive), same four prices | **Exclusion constraint** `ex_seasonal_rates_no_overlap` (btree_gist): no two seasons for one plan and room type share a night |
+
+`properties.weekend_nights smallint[]` (default `{5,6}`, Friday and Saturday nights) selects which nights use weekend prices.
+
 ## Planned tables
 
-Next: `rate_plans`, `seasonal_rates`, taxes (1.4).
+Next: reservations, reservation_rooms, reservation_guests, guests (Phase 2).

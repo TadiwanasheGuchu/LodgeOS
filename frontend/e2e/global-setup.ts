@@ -15,6 +15,22 @@ export default function globalSetup() {
       stdio: "pipe",
     });
 
+  // Each run signs in many times from 127.0.0.1. Clear only the sign-in throttle counters,
+  // so back-to-back local runs are not refused by the (intended) 50-per-15-minutes IP limit.
+  execFileSync(
+    "uv",
+    [
+      "run",
+      "python",
+      "-c",
+      "import asyncio\nfrom app.core.redis import get_redis\n"
+        + "async def main():\n    r = get_redis()\n"
+        + "    async for k in r.scan_iter('login:*'):\n        await r.delete(k)\n    await r.aclose()\n"
+        + "asyncio.run(main())",
+    ],
+    { cwd: backend, stdio: "pipe" },
+  );
+
   const lodge = `e2e-lodge-${run}`;
   const camp = `e2e-camp-${run}`;
   const owner = `owner-${run}@lodge.example.com`;

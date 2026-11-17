@@ -7,12 +7,13 @@ from sqlalchemy import (
     ForeignKey,
     ForeignKeyConstraint,
     Integer,
+    SmallInteger,
     String,
     Text,
     Time,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin, new_uuid
@@ -52,6 +53,9 @@ class Property(TimestampMixin, Base):
         CheckConstraint("currency ~ '^[A-Z]{3}$'", name="currency_iso4217"),
         CheckConstraint("country_code IS NULL OR country_code ~ '^[A-Z]{2}$'", name="country"),
         CheckConstraint("slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'", name="slug_format"),
+        CheckConstraint(
+            "weekend_nights <@ ARRAY[1,2,3,4,5,6,7]::smallint[]", name="weekend_nights"
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
@@ -75,6 +79,11 @@ class Property(TimestampMixin, Base):
     # Local times at the property. Stored as wall-clock time, interpreted in `timezone`.
     check_in_time: Mapped[time] = mapped_column(Time, nullable=False)
     check_out_time: Mapped[time] = mapped_column(Time, nullable=False)
+    # Nights that use weekend prices, as ISO weekdays of the night's date (1 = Monday ...
+    # 7 = Sunday). The default, Friday and Saturday nights, suits most leisure properties.
+    weekend_nights: Mapped[list[int]] = mapped_column(
+        ARRAY(SmallInteger), nullable=False, server_default="{5,6}"
+    )
 
 
 class Building(TimestampMixin, Base):

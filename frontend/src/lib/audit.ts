@@ -25,6 +25,15 @@ const LABELS: Record<string, string> = {
   "invitation.created": "Invited someone",
   "invitation.revoked": "Withdrew an invitation",
   "invitation.accepted": "Accepted an invitation and joined",
+  "tax.created": "Added a tax",
+  "tax.updated": "Changed a tax",
+  "rate_plan.created": "Added a rate plan",
+  "rate_plan.updated": "Changed a rate plan",
+  "rate_plan.price_set": "Set prices",
+  "rate_plan.price_cleared": "Cleared prices",
+  "season.created": "Added a season",
+  "season.updated": "Changed a season",
+  "season.deleted": "Deleted a season",
 };
 
 const FIELD_LABELS: Record<string, string> = {
