@@ -18,6 +18,7 @@ from app.modules.auth.router import router as auth_router
 from app.modules.organisations.router import router as organisation_router
 from app.modules.properties.router import router as properties_router
 from app.modules.rates.router import router as rates_router
+from app.modules.reservations.router import router as reservations_router
 from app.modules.rooms.router import router as rooms_router
 
 log = structlog.get_logger()
@@ -91,6 +92,7 @@ def create_app() -> FastAPI:
     app.include_router(access_router)
     app.include_router(invitations_router)
     app.include_router(rates_router)
+    app.include_router(reservations_router)
     return app
 
 

@@ -24,12 +24,16 @@ class Permission(enum.StrEnum):
     ROOMS_MAINTENANCE = "rooms.maintenance_update"
     RATES_VIEW = "rates.view"
     RATES_MANAGE = "rates.manage"
+    RESERVATIONS_VIEW = "reservations.view"
+    RESERVATIONS_MANAGE = "reservations.manage"
 
 
 # Permissions about a property's setup and rooms. When a role is granted for one property,
 # these apply to that property only.
 PROPERTY_PERMISSIONS: frozenset[Permission] = frozenset(
-    p for p in Permission if p.value.startswith(("properties.", "rooms.", "rates."))
+    p
+    for p in Permission
+    if p.value.startswith(("properties.", "rooms.", "rates.", "reservations."))
 )
 
 # Organisation-level permissions that any role grant carries organisation-wide, because
@@ -53,6 +57,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
             Permission.ROOMS_MAINTENANCE,
             Permission.RATES_VIEW,
             Permission.RATES_MANAGE,
+            Permission.RESERVATIONS_VIEW,
+            Permission.RESERVATIONS_MANAGE,
         }
     ),
     # Front desk marks rooms clean after a quick check and reports faults, but does not
@@ -64,6 +70,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
             Permission.ROOMS_VIEW,
             Permission.ROOMS_HOUSEKEEPING,
             Permission.RATES_VIEW,
+            Permission.RESERVATIONS_VIEW,
+            Permission.RESERVATIONS_MANAGE,
         }
     ),
     Role.HOUSEKEEPING: frozenset(
@@ -88,6 +96,7 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
             Permission.AUDIT_VIEW,
             Permission.PROPERTIES_VIEW,
             Permission.RATES_VIEW,
+            Permission.RESERVATIONS_VIEW,
         }
     ),
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMoney, formatPercent, parseMoneyInput } from "@/lib/money";
+import { formatMoney, formatPercent, parseMoneyInput, sumMoney } from "@/lib/money";
 
 describe("money helpers", () => {
   it("formats decimal strings without floating point", () => {
@@ -19,5 +19,15 @@ describe("money helpers", () => {
   it("formats tax rates", () => {
     expect(formatPercent("15.0000")).toBe("15%");
     expect(formatPercent("7.5000")).toBe("7.5%");
+  });
+});
+
+describe("sumMoney", () => {
+  it("adds exactly in cents", () => {
+    // 0.1 + 0.2 is 0.30000000000000004 in floating point.
+    expect(sumMoney(["0.10", "0.20"])).toBe("0.30");
+    expect(sumMoney(["9999999999.99", "0.01"])).toBe("10000000000.00");
+    expect(sumMoney(["1500.00", "-0.05"])).toBe("1499.95");
+    expect(sumMoney([])).toBe("0.00");
   });
 });

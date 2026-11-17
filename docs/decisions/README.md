@@ -11,3 +11,4 @@ One file per significant decision: `NNNN-short-title.md` with Status, Context, D
 | 0005 | Frontend served same-origin, rendered per request | Accepted |
 | 0006 | Database roles and property-level access | Accepted |
 | 0007 | Money representation and tax rounding | Accepted |
+| 0008 | Reservation integrity under concurrency | Accepted |

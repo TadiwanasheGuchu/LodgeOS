@@ -86,6 +86,7 @@ class Room(TimestampMixin, Base):
     __tablename__ = "rooms"
     __table_args__ = (
         UniqueConstraint("property_id", "number"),
+        UniqueConstraint("id", "property_id", name="uq_rooms_id_property"),
         ForeignKeyConstraint(
             ["property_id", "organisation_id"],
             ["properties.id", "properties.organisation_id"],

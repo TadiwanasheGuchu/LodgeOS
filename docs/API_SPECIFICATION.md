@@ -90,6 +90,18 @@ IDs belonging to another organisation return 404, exactly like IDs that do not e
 
 All amounts are decimal strings, e.g. `"1250.00"`.
 
+## Endpoints (Phase 2.1)
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| GET | `/api/v1/guests?q=` | `reservations.view` | Search by name, email or phone (20 results) |
+| GET | `/api/v1/properties/{id}/availability?check_in&check_out` | `reservations.view` | Per room type: free rooms per night and for the whole stay |
+| GET | `/api/v1/properties/{id}/reservations?from&to` | `reservations.view` | Stays overlapping the range (max 120 days); `include_cancelled` |
+| POST | `/api/v1/properties/{id}/reservations` | `reservations.manage` | `{check_in, check_out, guest_id \| guest, rooms[{room_type_id, rate_plan_id, adults, children, room_id?}], status, source, notes}`. 409 when not enough rooms are free (message names the night) or a chosen room is taken; 422 when a room cannot be priced |
+| GET | `/api/v1/reservations/{id}` | `reservations.view` | Guest, rooms with price snapshots, status history |
+| POST | `/api/v1/reservations/{id}/confirm` | `reservations.manage` | Provisional → confirmed |
+| POST | `/api/v1/reservations/{id}/cancel` | `reservations.manage` | `{reason}` required |
+
 ## Role permissions
 
 Defaults of the six system roles (organisation-wide grants). A role granted for one property applies its `properties.*` and `rooms.*` permissions to that property only.
@@ -109,3 +121,5 @@ Defaults of the six system roles (organisation-wide grants). A role granted for 
 | rooms.maintenance_update | ✓ | ✓ | | | ✓ | |
 | rates.view | ✓ | ✓ | ✓ | | | ✓ |
 | rates.manage | ✓ | ✓ | | | | |
+| reservations.view | ✓ | ✓ | ✓ | | | ✓ |
+| reservations.manage | ✓ | ✓ | ✓ | | | |

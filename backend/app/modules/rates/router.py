@@ -11,7 +11,7 @@ from app.core.errors import conflict_from_integrity, not_found
 from app.modules.audit import service as audit
 from app.modules.auth.deps import DB, AuthContext, client_ip, require_permission_anywhere
 from app.modules.auth.permissions import Permission
-from app.modules.properties.models import Property, RecordStatus
+from app.modules.properties.models import Property
 from app.modules.properties.router import get_property
 from app.modules.rates import pricing
 from app.modules.rates.models import RatePlan, RatePlanPrice, SeasonalRate, Tax
@@ -33,6 +33,7 @@ from app.modules.rates.schemas import (
     TaxOut,
     TaxUpdate,
 )
+from app.modules.rates.service import price_stay
 from app.modules.rooms.models import RoomType
 
 router = APIRouter(prefix="/api/v1", tags=["rates"])
@@ -347,65 +348,16 @@ async def delete_season(season_id: uuid.UUID, auth: CanManage, request: Request,
 # --- quote ------------------------------------------------------------------------------
 
 
-def _prices(row: RatePlanPrice | SeasonalRate) -> pricing.Prices:
-    return pricing.Prices(
-        row.base_price, row.weekend_price, row.extra_adult_price, row.extra_child_price
-    )
-
-
 @router.post("/properties/{property_id}/quote", response_model=QuoteOut)
 async def quote(property_id: uuid.UUID, body: QuoteRequest, auth: CanView, db: DB) -> QuoteOut:
-    """Price a stay. Used by staff now and by reservations in Phase 2, which will store
-    the returned breakdown as the booking's price snapshot."""
+    """Price a stay. Reservations use the same function and store its breakdown."""
     prop: Property = await get_property(db, property_id, auth, Permission.RATES_VIEW)
-    plan = await db.get(RatePlan, body.rate_plan_id)
-    if plan is None or plan.property_id != prop.id or plan.status != RecordStatus.ACTIVE:
-        raise HTTPException(status_code=422, detail="Choose an active rate plan of this property.")
-    rt = await _room_type_of(db, prop.id, body.room_type_id)
-    if rt.status != RecordStatus.ACTIVE:
-        raise HTTPException(status_code=422, detail="That room type is archived.")
-    normal = await db.scalar(
-        select(RatePlanPrice).where(
-            RatePlanPrice.rate_plan_id == plan.id, RatePlanPrice.room_type_id == rt.id
-        )
-    )
-    seasons = (
-        await db.scalars(
-            select(SeasonalRate).where(
-                SeasonalRate.rate_plan_id == plan.id,
-                SeasonalRate.room_type_id == rt.id,
-                SeasonalRate.start_date < body.check_out,
-                SeasonalRate.end_date >= body.check_in,
-            )
-        )
-    ).all()
-    taxes = (
-        await db.scalars(
-            select(Tax)
-            .where(Tax.property_id == prop.id, Tax.status == RecordStatus.ACTIVE)
-            .order_by(Tax.sort_order, Tax.name)
-        )
-    ).all()
     try:
-        result = pricing.quote(
-            rules=pricing.PlanRules(
-                currency=plan.currency,
-                prices_include_tax=plan.prices_include_tax,
-                min_stay_nights=plan.min_stay_nights,
-                max_stay_nights=plan.max_stay_nights,
-                stay_from=plan.stay_from,
-                stay_to=plan.stay_to,
-            ),
-            occupancy=pricing.Occupancy(
-                base=rt.base_occupancy,
-                max_total=rt.max_occupancy,
-                max_adults=rt.max_adults,
-                max_children=rt.max_children,
-            ),
-            normal_prices=_prices(normal) if normal else None,
-            seasons=[pricing.Season(s.name, s.start_date, s.end_date, _prices(s)) for s in seasons],
-            taxes=[pricing.TaxRate(t.name, t.rate_percent) for t in taxes],
-            weekend_nights=prop.weekend_nights,
+        priced = await price_stay(
+            db,
+            prop,
+            rate_plan_id=body.rate_plan_id,
+            room_type_id=body.room_type_id,
             check_in=body.check_in,
             check_out=body.check_out,
             adults=body.adults,
@@ -413,6 +365,7 @@ async def quote(property_id: uuid.UUID, body: QuoteRequest, auth: CanView, db: D
         )
     except pricing.QuoteError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from None
+    result, plan, rt = priced.quote, priced.plan, priced.room_type
     return QuoteOut(
         currency=result.currency,
         prices_include_tax=result.prices_include_tax,

@@ -23,3 +23,22 @@ export function parseMoneyInput(raw: string): string | null {
 export function formatPercent(rate: string): string {
   return `${rate.replace(/\.?0+$/, "")}%`;
 }
+
+/**
+ * Exact sum of decimal-string amounts for previews, using whole cents (BigInt), never
+ * floating point. The server's total remains the authoritative figure.
+ */
+export function sumMoney(amounts: string[]): string {
+  const ZERO = BigInt(0);
+  const HUNDRED = BigInt(100);
+  let cents = ZERO;
+  for (const a of amounts) {
+    const negative = a.startsWith("-");
+    const [whole, fraction = ""] = a.replace("-", "").split(".");
+    const value = BigInt(whole || "0") * HUNDRED + BigInt((fraction + "00").slice(0, 2));
+    cents += negative ? -value : value;
+  }
+  const sign = cents < ZERO ? "-" : "";
+  const abs = cents < ZERO ? -cents : cents;
+  return `${sign}${abs / HUNDRED}.${(abs % HUNDRED).toString().padStart(2, "0")}`;
+}
