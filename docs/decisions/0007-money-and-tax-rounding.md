@@ -6,7 +6,7 @@
 Prices, invoices and payments must reconcile to the cent. Tax rules differ by country and change over time; LodgeOS must not hard-code any of them. Lodges usually quote tax-inclusive prices to guests, while corporate rates may be quoted before tax.
 
 ## Decision
-- **Representation:** money is `NUMERIC(12,2)` in PostgreSQL, `Decimal` in Python, and a decimal **string** in JSON. Every price-bearing record stores its currency. The browser formats amounts but never calculates them; totals come from the server.
+- **Representation:** money is `NUMERIC(12,2)` in PostgreSQL, `Decimal` in Python, and a decimal **string** in JSON. Every price-bearing record stores its currency. The browser formats amounts and does no floating-point arithmetic on them. The only browser calculation allowed is an exact preview sum in whole cents (`sumMoney`, BigInt); the server's totals are authoritative.
 - **Rounding:** `ROUND_HALF_UP` to cents, applied to the stay total and to each tax amount, nowhere else.
 - **Taxes** are configured per property (name and percentage), applied to accommodation, calculated on the net amount and not compounded.
 - **Each tax amount is rounded on its own** so it equals its rate applied to the net, as a tax invoice requires. When prices include tax, the net is estimated as `total / (1 + Σrates)`, taxes are computed from it, and the final net is `total − Σtaxes`: the rounding cent goes into the net, never into a tax. When prices exclude tax, the total is `net + Σtaxes`.

@@ -13,7 +13,9 @@ export type Permission =
   | "rooms.housekeeping_update"
   | "rooms.maintenance_update"
   | "rates.view"
-  | "rates.manage";
+  | "rates.manage"
+  | "reservations.view"
+  | "reservations.manage";
 
 export type Role =
   | "owner"
@@ -328,4 +330,91 @@ export interface Quote {
   taxes: { name: string; rate_percent: string; amount: Money }[];
   tax_total: Money;
   total: Money;
+}
+
+export type ReservationStatus = "provisional" | "confirmed" | "checked_in" | "checked_out" | "cancelled" | "no_show";
+export type BookingSource = "phone" | "walk_in" | "email" | "whatsapp" | "website" | "ota" | "corporate" | "other";
+
+export const RESERVATION_STATUS_LABELS: Record<ReservationStatus, string> = {
+  provisional: "Provisional",
+  confirmed: "Confirmed",
+  checked_in: "Checked in",
+  checked_out: "Checked out",
+  cancelled: "Cancelled",
+  no_show: "No-show",
+};
+
+export const BOOKING_SOURCE_LABELS: Record<BookingSource, string> = {
+  phone: "Phone",
+  walk_in: "Walk-in",
+  email: "Email",
+  whatsapp: "WhatsApp",
+  website: "Website",
+  ota: "Online travel agent",
+  corporate: "Corporate",
+  other: "Other",
+};
+
+export interface Guest {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+  country_code: string | null;
+  notes: string | null;
+}
+
+export interface ReservationSummary {
+  id: string;
+  property_id: string;
+  reference: string;
+  status: ReservationStatus;
+  source: BookingSource;
+  guest_id: string;
+  guest_name: string;
+  check_in: string;
+  check_out: string;
+  nights: number;
+  room_count: number;
+  currency: string;
+  total_amount: Money;
+  created_at: string;
+}
+
+export interface ReservationDetail extends ReservationSummary {
+  tax_amount: Money;
+  notes: string | null;
+  cancellation_reason: string | null;
+  guest: Guest;
+  rooms: {
+    id: string;
+    room_type_id: string;
+    room_type_name: string;
+    room_id: string | null;
+    room_number: string | null;
+    rate_plan_id: string;
+    adults: number;
+    children: number;
+    total_amount: Money;
+    tax_amount: Money;
+    price_snapshot: {
+      currency: string;
+      rate_plan: string;
+      nights: { date: string; season: string | null; weekend: boolean; amount: Money }[];
+      net_total: Money;
+      taxes: { name: string; rate_percent: string; amount: Money }[];
+      total: Money;
+    };
+  }[];
+  history: { from_status: string | null; to_status: ReservationStatus; reason: string | null; changed_by_name: string | null; changed_at: string }[];
+}
+
+export interface RoomTypeAvailability {
+  room_type_id: string;
+  room_type_name: string;
+  room_type_code: string;
+  max_occupancy: number;
+  free: number;
+  nights: { night: string; sellable: number; booked: number; free: number }[];
 }

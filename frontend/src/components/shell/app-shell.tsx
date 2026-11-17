@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, BedDouble, Building2, History, LayoutGrid, Menu, Settings2, Users, X } from "lucide-react";
+import { ArrowLeftRight, BedDouble, Building2, CalendarDays, History, LayoutGrid, Menu, Settings2, Users, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -18,6 +18,7 @@ const ICONS: Record<NavIcon, typeof LayoutGrid> = {
   activity: History,
   rooms: BedDouble,
   properties: Building2,
+  reservations: CalendarDays,
 };
 
 type ActiveMe = Me & { active_organisation: NonNullable<Me["active_organisation"]> };

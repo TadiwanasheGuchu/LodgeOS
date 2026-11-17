@@ -2,8 +2,36 @@
 
 _Last updated: 2026-11-16_
 
-**Current phase:** 1 — Property management
-**Current milestone:** Phase 1 complete (1.4 done); next is Phase 2 (reservations)
+**Current phase:** 2 — Reservations
+**Current milestone:** 2.1 complete; next is 2.2 (booking calendar)
+
+## Phase 2 plan
+
+| Milestone | Scope | Status |
+|---|---|---|
+| 2.1 | Guests, reservation engine (availability, concurrency-safe booking, price snapshot, references, status history), booking form, list, detail, confirm and cancel | ✅ Done |
+| 2.2 | Booking calendar (rooms by date), room allocation and moves, arrivals and departures on the overview | ⏳ Next |
+| 2.3 | Check-in and check-out (with housekeeping hand-off), booking changes (dates, rooms, guests) through the same inventory lock, no-shows | Not started |
+
+## Phase 2.1 acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| A room type is never oversold, including under concurrent bookings | ✅ Tested: 8 simultaneous requests → 1 booking; deterministic two-transaction test that fails without the lock |
+| A physical room never holds two active stays on one night | ✅ Tested at API and database level (exclusion constraint) |
+| Out-of-order rooms are not sold | ✅ Tested |
+| Each booking keeps its price when rates change | ✅ Tested |
+| Unique reference; status history; cancellation needs a reason and frees inventory | ✅ Tested |
+| Bookings and history cannot be deleted | ✅ Tested (no DELETE privilege) |
+| Guest details hidden from housekeeping; accountants read-only; other tenants see nothing | ✅ Tested |
+| Phone booking and cancellation work end to end | ✅ Tested (E2E) |
+
+## Test results (milestone 2.1)
+
+- Backend: **107 passed, 0 failed**. `ruff`, `mypy --strict`, `alembic check`: clean.
+- Frontend unit and component: **17 passed**. ESLint, TypeScript, production build: clean.
+- End-to-end: **25 passed, 0 failed**.
+- Found and fixed: the first concurrency test passed even with the lock removed, so it proved nothing; replaced with a deterministic two-transaction test, confirmed to fail without the lock. The booking form's preview total first used floating-point arithmetic; now an exact whole-cent sum (`sumMoney`).
 
 ## Phase 1 plan
 
@@ -87,4 +115,6 @@ See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no password reset, no
 
 ## Next
 
-1. Phase 2: availability, reservations, booking calendar, guest records, check-in and check-out.
+1. Phase 2.2: booking calendar and room allocation.
+2. Phase 2.3: check-in, check-out and booking changes.
+3. Phase 3: availability, reservations, booking calendar, guest records, check-in and check-out.

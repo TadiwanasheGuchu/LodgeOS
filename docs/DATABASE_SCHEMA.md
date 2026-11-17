@@ -156,6 +156,19 @@ Money is `NUMERIC(12,2)`; tax rates are `NUMERIC(7,4)` percentages (ADR-0007). A
 
 `properties.weekend_nights smallint[]` (default `{5,6}`, Friday and Saturday nights) selects which nights use weekend prices.
 
+## Tables (Phase 2.1)
+
+All use tenant RLS; none can be deleted by the app role (ADR-0008).
+
+| Table | Key columns | Notes |
+|---|---|---|
+| `guests` | `first_name`, `last_name`, `email`, `phone`, `country_code`, `notes` | Organisation-wide, so returning guests are recognised at every property |
+| `reservations` | `reference` (unique per organisation), `status`, `source`, `guest_id`, `check_in`, `check_out`, `currency`, `total_amount`, `tax_amount`, `notes`, `cancellation_reason`, `created_by` | CHECK: cancelled ⇔ reason present; check_out > check_in |
+| `reservation_rooms` | `room_type_id`, `room_id` (null until allocated), `rate_plan_id`, dates and status copied from the reservation, `adults`, `children`, `total_amount`, `tax_amount`, `price_snapshot` (JSONB) | **Exclusion constraint** `ex_reservation_rooms_no_double_booking`; partial index `ix_reservation_rooms_inventory` for availability |
+| `reservation_status_history` | `from_status`, `to_status`, `reason`, `changed_by`, `changed_at` | INSERT and SELECT only |
+
+`rooms` gained `UNIQUE (id, property_id)` for the composite foreign key from `reservation_rooms`.
+
 ## Planned tables
 
-Next: reservations, reservation_rooms, reservation_guests, guests (Phase 2).
+Next: check-in/check-out records, reservation changes (Phase 2.3); `room_blocks` with the maintenance module.
