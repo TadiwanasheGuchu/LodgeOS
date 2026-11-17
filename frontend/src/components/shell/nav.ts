@@ -1,7 +1,7 @@
 import type { Access } from "@/lib/access";
 import type { Permission } from "@/lib/types";
 
-export type NavIcon = "overview" | "settings" | "team" | "activity" | "rooms" | "properties" | "reservations";
+export type NavIcon = "overview" | "settings" | "team" | "activity" | "rooms" | "properties" | "reservations" | "calendar";
 
 export interface NavItem {
   href: string;
@@ -14,6 +14,7 @@ export interface NavItem {
 // Only screens that exist are listed. Modules are added here as they are built.
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Overview", icon: "overview", permission: null },
+  { href: "/calendar", label: "Calendar", icon: "calendar", permission: "reservations.view" },
   { href: "/reservations", label: "Reservations", icon: "reservations", permission: "reservations.view" },
   { href: "/rooms", label: "Room status", icon: "rooms", permission: "rooms.view" },
   { href: "/properties", label: "Properties", icon: "properties", permission: "properties.view" },

@@ -1,8 +1,9 @@
 """Guests, availability and reservations."""
 
 import uuid
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import Annotated
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, or_, select
@@ -14,7 +15,7 @@ from app.modules.auth.deps import DB, AuthContext, client_ip, require_permission
 from app.modules.auth.models import User
 from app.modules.auth.permissions import Permission
 from app.modules.guests.models import Guest
-from app.modules.properties.models import RecordStatus
+from app.modules.properties.models import Building, RecordStatus
 from app.modules.properties.router import get_property
 from app.modules.reservations import service
 from app.modules.reservations.models import (
@@ -24,6 +25,11 @@ from app.modules.reservations.models import (
     ReservationStatusChange,
 )
 from app.modules.reservations.schemas import (
+    AssignRoom,
+    CalendarOut,
+    CalendarRoom,
+    CalendarStay,
+    FreeRoom,
     GuestIn,
     GuestOut,
     NightOut,
@@ -34,6 +40,7 @@ from app.modules.reservations.schemas import (
     RoomTypeAvailability,
     StatusChange,
     StatusChangeOut,
+    TodayOut,
 )
 from app.modules.rooms.models import Room, RoomType
 
@@ -343,3 +350,207 @@ async def cancel(
     reservation_id: uuid.UUID, body: StatusChange, auth: CanManage, request: Request, db: DB
 ) -> ReservationDetail:
     return await _transition(reservation_id, ReservationStatus.CANCELLED, body, auth, request, db)
+
+
+# --- room allocation --------------------------------------------------------------------
+
+
+async def _reservation_room(
+    db: DB, auth: AuthContext, rr_id: uuid.UUID, perm: Permission
+) -> ReservationRoom:
+    rr = await db.get(ReservationRoom, rr_id)
+    if rr is None:
+        raise not_found("Booked room")
+    auth.require_for_property(perm, rr.property_id)
+    return rr
+
+
+@router.get("/reservation-rooms/{rr_id}/free-rooms", response_model=list[FreeRoom])
+async def list_free_rooms(rr_id: uuid.UUID, auth: CanView, db: DB) -> list[FreeRoom]:
+    rr = await _reservation_room(db, auth, rr_id, Permission.RESERVATIONS_VIEW)
+    rooms = await service.free_rooms(db, rr)
+    buildings = {
+        b.id: b.name
+        for b in (
+            await db.scalars(select(Building).where(Building.property_id == rr.property_id))
+        ).all()
+    }
+    return [
+        FreeRoom(
+            id=r.id,
+            number=r.number,
+            building_name=buildings.get(r.building_id) if r.building_id else None,
+            floor=r.floor,
+            housekeeping_status=r.housekeeping_status,
+            maintenance_status=r.maintenance_status,
+        )
+        for r in rooms
+    ]
+
+
+@router.post("/reservation-rooms/{rr_id}/assign", response_model=ReservationDetail)
+async def assign_room(
+    rr_id: uuid.UUID, body: AssignRoom, auth: CanManage, request: Request, db: DB
+) -> ReservationDetail:
+    rr = await _reservation_room(db, auth, rr_id, Permission.RESERVATIONS_MANAGE)
+    previous = rr.room_id
+    try:
+        async with db.begin_nested():
+            await service.assign_room(db, rr, body.room_id)
+    except service.BookingError as exc:
+        raise _booking_error(exc) from None
+    except IntegrityError as exc:
+        if "ex_reservation_rooms_no_double_booking" in str(exc.orig):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="That room is already booked for some of these nights.",
+            ) from None
+        raise
+    reservation = await db.get(Reservation, rr.reservation_id)
+    assert reservation is not None
+    numbers = {
+        r.id: r.number
+        for r in (
+            await db.scalars(
+                select(Room).where(Room.id.in_([x for x in (previous, rr.room_id) if x]))
+            )
+        ).all()
+    }
+    await audit.record(
+        db,
+        action="reservation.room_assigned",
+        organisation_id=rr.organisation_id,
+        actor_user_id=auth.user.id,
+        entity_type="reservation",
+        entity_id=reservation.id,
+        data={
+            "reference": reservation.reference,
+            "from": numbers.get(previous) if previous else None,
+            "to": numbers.get(rr.room_id) if rr.room_id else None,
+        },
+        ip_address=client_ip(request),
+    )
+    return await _detail(db, reservation)
+
+
+# --- calendar and today -----------------------------------------------------------------
+
+
+@router.get("/properties/{property_id}/calendar", response_model=CalendarOut)
+async def calendar(
+    property_id: uuid.UUID,
+    auth: CanView,
+    db: DB,
+    start: date,
+    days: Annotated[int, Query(ge=1, le=31)] = 14,
+) -> CalendarOut:
+    prop = await get_property(db, property_id, auth, Permission.RESERVATIONS_VIEW)
+    end = start + timedelta(days=days)
+    rooms = await db.execute(
+        select(Room, RoomType.code, Building.name)
+        .join(RoomType, RoomType.id == Room.room_type_id)
+        .outerjoin(Building, Building.id == Room.building_id)
+        .where(Room.property_id == prop.id, Room.status == RecordStatus.ACTIVE)
+        .order_by(
+            RoomType.sort_order,
+            RoomType.name,
+            Building.sort_order.nulls_first(),
+            func.length(Room.number),
+            Room.number,
+        )
+    )
+    stays = await db.execute(
+        select(ReservationRoom, Reservation.reference, Guest.first_name, Guest.last_name)
+        .join(Reservation, Reservation.id == ReservationRoom.reservation_id)
+        .join(Guest, Guest.id == Reservation.guest_id)
+        .where(
+            ReservationRoom.property_id == prop.id,
+            ReservationRoom.status.in_(service.ASSIGNABLE),
+            ReservationRoom.check_in < end,
+            ReservationRoom.check_out > start,
+        )
+        .order_by(ReservationRoom.check_in, Reservation.reference)
+    )
+    return CalendarOut(
+        start=start,
+        days=days,
+        rooms=[
+            CalendarRoom(
+                id=r.id,
+                number=r.number,
+                room_type_id=r.room_type_id,
+                room_type_code=code,
+                building_name=building,
+                housekeeping_status=r.housekeeping_status,
+                maintenance_status=r.maintenance_status,
+            )
+            for r, code, building in rooms.all()
+        ],
+        stays=[
+            CalendarStay(
+                reservation_room_id=rr.id,
+                reservation_id=rr.reservation_id,
+                reference=ref,
+                status=rr.status,
+                guest_name=f"{first} {last}",
+                room_type_id=rr.room_type_id,
+                room_id=rr.room_id,
+                check_in=rr.check_in,
+                check_out=rr.check_out,
+                adults=rr.adults,
+                children=rr.children,
+            )
+            for rr, ref, first, last in stays.all()
+        ],
+    )
+
+
+@router.get("/properties/{property_id}/today", response_model=TodayOut)
+async def today(property_id: uuid.UUID, auth: CanView, db: DB) -> TodayOut:
+    """Arrivals and departures for today in the property's timezone."""
+    prop = await get_property(db, property_id, auth, Permission.RESERVATIONS_VIEW)
+    day = datetime.now(ZoneInfo(prop.timezone)).date()
+    active = [ReservationStatus.PROVISIONAL, ReservationStatus.CONFIRMED]
+    arrivals = await _summary_rows(
+        db,
+        [
+            Reservation.property_id == prop.id,
+            Reservation.check_in == day,
+            Reservation.status.in_([*active, ReservationStatus.CHECKED_IN]),
+        ],
+    )
+    departures = await _summary_rows(
+        db,
+        [
+            Reservation.property_id == prop.id,
+            Reservation.check_out == day,
+            Reservation.status.in_(
+                [*active, ReservationStatus.CHECKED_IN, ReservationStatus.CHECKED_OUT]
+            ),
+        ],
+    )
+    in_house = await db.scalar(
+        select(func.count())
+        .select_from(Reservation)
+        .where(
+            Reservation.property_id == prop.id,
+            Reservation.status == ReservationStatus.CHECKED_IN,
+        )
+    )
+    unassigned = await db.scalar(
+        select(func.count())
+        .select_from(ReservationRoom)
+        .where(
+            ReservationRoom.property_id == prop.id,
+            ReservationRoom.check_in == day,
+            ReservationRoom.room_id.is_(None),
+            ReservationRoom.status.in_(active),
+        )
+    )
+    return TodayOut(
+        date=day,
+        arrivals=arrivals,
+        departures=departures,
+        in_house=int(in_house or 0),
+        unassigned_arrivals=int(unassigned or 0),
+    )

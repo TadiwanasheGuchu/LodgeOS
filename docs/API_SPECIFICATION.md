@@ -102,6 +102,15 @@ All amounts are decimal strings, e.g. `"1250.00"`.
 | POST | `/api/v1/reservations/{id}/confirm` | `reservations.manage` | Provisional → confirmed |
 | POST | `/api/v1/reservations/{id}/cancel` | `reservations.manage` | `{reason}` required |
 
+## Endpoints (Phase 2.2)
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| GET | `/api/v1/reservation-rooms/{id}/free-rooms` | `reservations.view` | Rooms of the booked type with no overlapping active stay, not out of order |
+| POST | `/api/v1/reservation-rooms/{id}/assign` | `reservations.manage` | `{room_id \| null}`: assign, move within the room type, or unassign. 409 if the room is taken (exclusion constraint) or out of order |
+| GET | `/api/v1/properties/{id}/calendar?start&days` | `reservations.view` | Rooms and active stays for up to 31 days |
+| GET | `/api/v1/properties/{id}/today` | `reservations.view` | Arrivals, departures, in-house count and unassigned arrivals for today in the property's timezone |
+
 ## Role permissions
 
 Defaults of the six system roles (organisation-wide grants). A role granted for one property applies its `properties.*` and `rooms.*` permissions to that property only.
