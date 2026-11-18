@@ -5,6 +5,7 @@ All notable changes are recorded here. Format based on [Keep a Changelog](https:
 ## [Unreleased]
 
 ### Added
+- Check-in (needs an assigned room, from the arrival date), check-out (room handed to housekeeping as dirty), no-shows, and changing a booking's dates with availability re-checked and the stay re-priced. Guest details can be corrected.
 - Booking calendar: rooms by date with stays as bars, bookings without a room shown per room type, weekend nights shaded.
 - Assigning, moving and removing a booking's physical room, offering only rooms free for every night.
 - Today's arrivals and departures on the overview for front-desk roles.

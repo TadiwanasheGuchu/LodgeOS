@@ -38,6 +38,11 @@ const LABELS: Record<string, string> = {
   "reservation.confirmed": "Confirmed a booking",
   "reservation.cancelled": "Cancelled a booking",
   "reservation.room_assigned": "Assigned a room",
+  "reservation.checked_in": "Checked in a guest",
+  "reservation.checked_out": "Checked out a guest",
+  "reservation.no_show": "Marked a no-show",
+  "reservation.dates_changed": "Changed booking dates",
+  "guest.updated": "Updated guest details",
 };
 
 const FIELD_LABELS: Record<string, string> = {
