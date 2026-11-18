@@ -2,8 +2,8 @@
 
 _Last updated: 2026-11-16_
 
-**Current phase:** 2 — Reservations
-**Current milestone:** 2.2 complete; next is 2.3 (check-in, check-out, booking changes)
+**Current phase:** 2 — Reservations (complete); next is Phase 3 — Operations and finance
+**Current milestone:** 2.3 complete
 
 ## Phase 2 plan
 
@@ -11,7 +11,24 @@ _Last updated: 2026-11-16_
 |---|---|---|
 | 2.1 | Guests, reservation engine (availability, concurrency-safe booking, price snapshot, references, status history), booking form, list, detail, confirm and cancel | ✅ Done |
 | 2.2 | Booking calendar (rooms by date), room allocation and moves, arrivals and departures on the overview | ✅ Done |
-| 2.3 | Check-in and check-out (with housekeeping hand-off), booking changes (dates, rooms, guests) through the same inventory lock, no-shows | ⏳ Next |
+| 2.3 | Check-in and check-out (with housekeeping hand-off), date changes through the same inventory lock, no-shows, guest edits | ✅ Done |
+
+## Phase 2.3 acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| Check-in only for confirmed bookings, from the arrival date in the property's timezone, with every room assigned and usable | ✅ Tested |
+| Check-out marks rooms dirty for housekeeping; early departure frees remaining nights | ✅ Tested (API and E2E) |
+| No-show only from the arrival date; frees the rooms | ✅ Tested |
+| Date changes cannot oversell, do not collide with the booking itself, re-price at current rates, and keep assigned rooms or refuse | ✅ Tested |
+| Checked-in bookings cannot be cancelled; every change appears in the history | ✅ Tested |
+| Guest edits are audited without personal data in the log | ✅ Tested |
+
+## Test results (milestone 2.3)
+
+- Backend: **120 passed, 0 failed**. Lint, types, migration check clean.
+- Frontend unit and component: **17 passed**. End-to-end: **27 passed** (new: arrival today → assign → check in → check out → room shows dirty).
+- Not yet done in Phase 2: changing a booking's rooms or room types (cancel and rebook for now), splitting a stay across rooms.
 
 ## Phase 2.2 acceptance criteria
 
@@ -131,6 +148,5 @@ See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no password reset, no
 
 ## Next
 
-1. Phase 2.2: booking calendar and room allocation.
-2. Phase 2.3: check-in, check-out and booking changes.
-3. Phase 3: availability, reservations, booking calendar, guest records, check-in and check-out.
+1. Phase 3: housekeeping task lists, maintenance tickets with dated room blocks, invoices, payments, refunds, reconciliation, notifications.
+2. Phase 3: availability, reservations, booking calendar, guest records, check-in and check-out.

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ReservationStatusBadge } from "@/components/reservations/status-badge";
 import { accessOf } from "@/lib/access";
-import { formatStayDate } from "@/lib/dates";
+import { formatStayDate, todayIn } from "@/lib/dates";
 import { formatDateTime } from "@/lib/format";
 import { formatMoney, formatPercent } from "@/lib/money";
 import { apiGet, requireOrganisation, ServerApiError } from "@/lib/server/api";
@@ -43,7 +43,7 @@ export default async function ReservationPage({ params }: PageProps<"/reservatio
             {r.guest_name} · {formatStayDate(r.check_in, long)} to {formatStayDate(r.check_out, long)} · {r.nights} {r.nights === 1 ? "night" : "nights"}
           </p>
         </div>
-        {canManage ? <ReservationActions reservation={r} /> : null}
+        {canManage ? <ReservationActions reservation={r} today={todayIn(property.timezone)} /> : null}
       </div>
 
       {r.status === "cancelled" && r.cancellation_reason ? (

@@ -89,7 +89,7 @@ export default async function OverviewPage() {
               ))}
           </ul>
           <p className="border-t border-line bg-cloud px-5 py-3 text-[13px] text-muted">
-            Check-in and check-out, invoices and payments are being built next.
+            Invoices, payments and housekeeping task lists are being built next.
           </p>
         </section>
 

@@ -15,7 +15,7 @@ from app.modules.auth.deps import DB, AuthContext, client_ip, require_permission
 from app.modules.auth.models import User
 from app.modules.auth.permissions import Permission
 from app.modules.guests.models import Guest
-from app.modules.properties.models import Building, RecordStatus
+from app.modules.properties.models import Building, Property, RecordStatus
 from app.modules.properties.router import get_property
 from app.modules.reservations import service
 from app.modules.reservations.models import (
@@ -29,9 +29,11 @@ from app.modules.reservations.schemas import (
     CalendarOut,
     CalendarRoom,
     CalendarStay,
+    DateChange,
     FreeRoom,
     GuestIn,
     GuestOut,
+    GuestUpdate,
     NightOut,
     ReservationCreate,
     ReservationDetail,
@@ -321,8 +323,13 @@ async def _transition(
 ) -> ReservationDetail:
     reservation = await _reservation(db, auth, reservation_id, Permission.RESERVATIONS_MANAGE)
     previous = reservation.status
+    prop = await db.get(Property, reservation.property_id)
+    assert prop is not None
+    property_today = datetime.now(ZoneInfo(prop.timezone)).date()
     try:
-        await service.change_status(db, reservation, to, user_id=auth.user.id, reason=body.reason)
+        await service.change_status(
+            db, reservation, to, user_id=auth.user.id, reason=body.reason, today=property_today
+        )
     except service.BookingError as exc:
         raise _booking_error(exc) from None
     await audit.record(
@@ -554,3 +561,102 @@ async def today(property_id: uuid.UUID, auth: CanView, db: DB) -> TodayOut:
         in_house=int(in_house or 0),
         unassigned_arrivals=int(unassigned or 0),
     )
+
+
+@router.post("/reservations/{reservation_id}/check-in", response_model=ReservationDetail)
+async def check_in(
+    reservation_id: uuid.UUID, body: StatusChange, auth: CanManage, request: Request, db: DB
+) -> ReservationDetail:
+    return await _transition(reservation_id, ReservationStatus.CHECKED_IN, body, auth, request, db)
+
+
+@router.post("/reservations/{reservation_id}/check-out", response_model=ReservationDetail)
+async def check_out(
+    reservation_id: uuid.UUID, body: StatusChange, auth: CanManage, request: Request, db: DB
+) -> ReservationDetail:
+    return await _transition(reservation_id, ReservationStatus.CHECKED_OUT, body, auth, request, db)
+
+
+@router.post("/reservations/{reservation_id}/no-show", response_model=ReservationDetail)
+async def no_show(
+    reservation_id: uuid.UUID, body: StatusChange, auth: CanManage, request: Request, db: DB
+) -> ReservationDetail:
+    return await _transition(reservation_id, ReservationStatus.NO_SHOW, body, auth, request, db)
+
+
+@router.patch("/reservations/{reservation_id}/dates", response_model=ReservationDetail)
+async def change_dates(
+    reservation_id: uuid.UUID, body: DateChange, auth: CanManage, request: Request, db: DB
+) -> ReservationDetail:
+    reservation = await _reservation(db, auth, reservation_id, Permission.RESERVATIONS_MANAGE)
+    prop = await db.get(Property, reservation.property_id)
+    assert prop is not None
+    try:
+        async with db.begin_nested():
+            old_total, new_total = await service.change_dates(
+                db,
+                prop=prop,
+                reservation=reservation,
+                check_in=body.check_in,
+                check_out=body.check_out,
+                user_id=auth.user.id,
+            )
+    except service.BookingError as exc:
+        raise _booking_error(exc) from None
+    except IntegrityError as exc:
+        if "ex_reservation_rooms_no_double_booking" in str(exc.orig):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An assigned room is taken on the new dates. Remove or change it first.",
+            ) from None
+        raise
+    await db.refresh(reservation)
+    await audit.record(
+        db,
+        action="reservation.dates_changed",
+        organisation_id=reservation.organisation_id,
+        actor_user_id=auth.user.id,
+        entity_type="reservation",
+        entity_id=reservation.id,
+        data={
+            "reference": reservation.reference,
+            "check_in": str(body.check_in),
+            "check_out": str(body.check_out),
+            "old_total": str(old_total),
+            "new_total": str(new_total),
+        },
+        ip_address=client_ip(request),
+    )
+    return await _detail(db, reservation)
+
+
+@router.patch("/guests/{guest_id}", response_model=GuestOut)
+async def update_guest(
+    guest_id: uuid.UUID, body: GuestUpdate, auth: CanManage, request: Request, db: DB
+) -> Guest:
+    """Guests belong to the organisation; anyone who manages reservations at any of its
+    properties may correct their details."""
+    guest = await db.get(Guest, guest_id)
+    if guest is None:
+        raise not_found("Guest")
+    changes = body.model_dump(exclude_unset=True)
+    for required in ("first_name", "last_name"):
+        if required in changes and not changes[required]:
+            raise HTTPException(status_code=422, detail="First and last name are required.")
+    if changes.get("email"):
+        changes["email"] = str(changes["email"]).lower()
+    diff = audit.apply_changes(guest, changes)
+    if diff["after"]:
+        await db.flush()
+        await audit.record(
+            db,
+            action="guest.updated",
+            organisation_id=guest.organisation_id,
+            actor_user_id=auth.user.id,
+            entity_type="guest",
+            entity_id=guest.id,
+            # Field names only: guest details are personal data and stay out of the log.
+            data={"fields": sorted(diff["after"])},
+            ip_address=client_ip(request),
+        )
+    return guest
