@@ -132,6 +132,13 @@ jobs:
       - name: End-to-end tests
         working-directory: frontend
         run: npm run e2e
+      - name: Keep screenshots and error context of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failures
+          path: frontend/test-results/
+          retention-days: 7
 
   backend-image:
     runs-on: ubuntu-24.04

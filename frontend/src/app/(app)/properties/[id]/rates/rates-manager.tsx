@@ -364,7 +364,7 @@ function PriceDialog({ plan, roomType, onClose, onDone }: { plan: RatePlanDetail
         title={`${roomType.name} · ${plan.name}`}
         description={`Per night for ${roomType.base_occupancy} guests, ${plan.prices_include_tax ? "including" : "before"} tax. Seasons override these prices.`}
       >
-        <form
+        <form method="post"
           noValidate
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -412,7 +412,7 @@ function SeasonDialog({
   return (
     <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent title={season ? `Edit ${season.name}` : "Add season"} description="Prices for these nights replace the normal prices. The last night is included.">
-        <form
+        <form method="post"
           noValidate
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -489,7 +489,7 @@ function TaxDialog({ propertyId, tax, onClose, onDone }: { propertyId: string; t
   return (
     <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent title={tax ? `Edit ${tax.name}` : "Add tax"} description="Charged on accommodation at this property. Confirm rates with your accountant.">
-        <form
+        <form method="post"
           noValidate
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -557,7 +557,7 @@ function PlanDialog({ propertyId, plan, onClose, onDone }: { propertyId: string;
   return (
     <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent title={plan ? `Edit ${plan.name}` : "Add rate plan"}>
-        <form
+        <form method="post"
           noValidate
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -684,7 +684,7 @@ function QuotePanel({
         <Calculator className="size-4" aria-hidden />
         Price a stay
       </h2>
-      <form onSubmit={run} noValidate className="mt-3 flex flex-col gap-3">
+      <form method="post" onSubmit={run} noValidate className="mt-3 flex flex-col gap-3">
         <Field id="q-plan" label="Rate plan">
           <Select id="q-plan" value={planId} onChange={(e) => setPlanId(e.target.value)}>
             {plans.map((p) => (

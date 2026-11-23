@@ -84,7 +84,7 @@ export function BuildingsManager({
         <p className="rounded-lg border border-line bg-white px-5 py-6 text-center text-sm text-muted">No buildings.</p>
       )}
       {canManage ? (
-        <form onSubmit={add} noValidate className="flex items-end gap-2">
+        <form method="post" onSubmit={add} noValidate className="flex items-end gap-2">
           <div className="flex-1">
             <Field id="building-name" label="New building">
               <Input id="building-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} placeholder="Garden Wing" />

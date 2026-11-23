@@ -53,3 +53,16 @@ test("the app is installable: manifest and icons are served", async ({ request }
     expect(img.headers()["content-type"]).toBe("image/png");
   }
 });
+
+test("credentials never reach the URL, even if the form is sent before scripts load", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto("/sign-in");
+  await page.getByLabel("Email").fill("someone@example.com");
+  await page.getByLabel("Password").fill("not-in-the-url-123");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.waitForLoadState();
+  expect(page.url()).not.toContain("not-in-the-url");
+  expect(page.url()).not.toContain("someone");
+  await context.close();
+});

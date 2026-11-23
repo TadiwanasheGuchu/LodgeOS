@@ -181,7 +181,7 @@ function RoomTypeDialog({
   return (
     <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
       <DialogContent title={roomType ? `Edit ${roomType.name}` : "Add room type"}>
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+        <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
           {error ? <Alert tone="error">{error}</Alert> : null}
           <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
             <Field id="rt-name" label="Name" error={err("name")}>

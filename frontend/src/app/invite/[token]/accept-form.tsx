@@ -43,7 +43,7 @@ export function AcceptForm({ token, preview }: { token: string; preview: Invitat
   }
 
   return (
-    <form onSubmit={submit} noValidate className="mt-8 flex flex-col gap-5">
+    <form method="post" onSubmit={submit} noValidate className="mt-8 flex flex-col gap-5">
       {error ? <Alert tone="error">{error}</Alert> : null}
       <Field id="accept-email" label="Email">
         <Input id="accept-email" value={preview.email} readOnly disabled />

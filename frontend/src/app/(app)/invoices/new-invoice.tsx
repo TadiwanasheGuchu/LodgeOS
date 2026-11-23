@@ -26,7 +26,7 @@ export function NewInvoice({ propertyId }: { propertyId: string }) {
       {open ? (
         <Dialog open onOpenChange={setOpen}>
           <DialogContent title="New invoice" description="For a stay, open the booking and choose “Create invoice” instead.">
-            <form
+            <form method="post"
               noValidate
               className="flex flex-col gap-4"
               onSubmit={async (e) => {

@@ -69,7 +69,7 @@ export function RecordPaymentDialog({
   return (
     <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent title={title} description={description}>
-        <form
+        <form method="post"
           noValidate
           className="flex flex-col gap-4"
           onSubmit={async (e) => {
@@ -149,7 +149,7 @@ export function RefundDialog({
   return (
     <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent title="Refund" description={`From ${payment.payer_name}'s ${formatMoney(payment.amount, payment.currency)} payment of ${payment.received_on}.`}>
-        <form
+        <form method="post"
           noValidate
           className="flex flex-col gap-4"
           onSubmit={async (e) => {
@@ -198,7 +198,7 @@ export function ReverseDialog({ payment, onClose, onDone }: { payment: Payment; 
         title={`Reverse ${formatMoney(payment.amount, payment.currency)} from ${payment.payer_name}?`}
         description="Only for a payment recorded by mistake, when no money was received. It stays on record as reversed and is taken off its invoices."
       >
-        <form
+        <form method="post"
           noValidate
           className="flex flex-col gap-4"
           onSubmit={async (e) => {

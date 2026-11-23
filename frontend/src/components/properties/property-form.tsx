@@ -124,7 +124,7 @@ export function PropertyForm({
   const err = (k: keyof Values) => errors[k]?.message;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-6">
+    <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-6">
       {result ? <Alert tone={result.tone}>{result.message}</Alert> : null}
 
       <fieldset className="grid gap-5 sm:grid-cols-2">

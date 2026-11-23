@@ -93,7 +93,7 @@ export function StayPortal({ token, initial }: { token: string; initial: PortalB
       {b.can_update ? (
         <section aria-label="Your arrival" className={box}>
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-forest"><Clock className="size-4" aria-hidden />Your arrival</h2>
-          <form
+          <form method="post"
             className="mt-3 flex flex-col gap-3"
             onSubmit={(e) => {
               e.preventDefault();
@@ -116,7 +116,7 @@ export function StayPortal({ token, initial }: { token: string; initial: PortalB
       ) : b.can_update && b.status !== "checked_in" ? (
         <section aria-label="Cancel" className={box}>
           {asking ? (
-            <form
+            <form method="post"
               className="flex flex-col gap-3"
               onSubmit={(e) => {
                 e.preventDefault();

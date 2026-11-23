@@ -178,7 +178,7 @@ function ReportDialog({ propertyId, rooms, onClose, onDone }: { propertyId: stri
   return (
     <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent title="Report a problem" description="The maintenance team sees it straight away.">
-        <form
+        <form method="post"
           noValidate
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -242,7 +242,7 @@ function ResolveDialog({ ticket, onClose, onDone }: { ticket: MaintenanceTicket;
   return (
     <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent title={`Fixed: ${ticket.title}`} description={blocked ? "The room goes back on sale straight away." : undefined}>
-        <form
+        <form method="post"
           noValidate
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -271,7 +271,7 @@ function BlockDialog({ ticket, today, onClose, onDone }: { ticket: MaintenanceTi
   return (
     <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent title={`Take room ${ticket.room_number} out of sale`} description="No bookings can use it on these nights. Refused if guests are in the room or it would leave too few rooms.">
-        <form
+        <form method="post"
           noValidate
           className="flex flex-col gap-4"
           onSubmit={(e) => {

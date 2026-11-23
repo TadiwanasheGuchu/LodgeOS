@@ -64,7 +64,7 @@ export function BookingFlow({ org, slug, property }: { org: string; slug: string
   const available = results?.filter((r) => r.available > 0 && r.offers.length > 0) ?? [];
   return (
     <div className="flex flex-col gap-5">
-      <form onSubmit={find} noValidate className="grid grid-cols-2 gap-3 rounded-lg border border-line bg-white p-4 sm:grid-cols-[1fr_1fr_auto_auto_auto] sm:items-end sm:p-5">
+      <form method="post" onSubmit={find} noValidate className="grid grid-cols-2 gap-3 rounded-lg border border-line bg-white p-4 sm:grid-cols-[1fr_1fr_auto_auto_auto] sm:items-end sm:p-5">
         <div className="col-span-2 sm:col-span-1">
         <Field id="arrival" label="Arrival">
           <Input
@@ -215,7 +215,7 @@ function GuestDetails({
 
   return (
     <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_16rem]">
-      <form onSubmit={submit} noValidate className="flex flex-col gap-4 rounded-lg border border-line bg-white p-4 sm:p-5">
+      <form method="post" onSubmit={submit} noValidate className="flex flex-col gap-4 rounded-lg border border-line bg-white p-4 sm:p-5">
         <button type="button" onClick={onBack} className="inline-flex items-center gap-1 self-start text-sm text-teal underline-offset-2 hover:underline">
           <ArrowLeft className="size-4" aria-hidden />
           Change room or dates

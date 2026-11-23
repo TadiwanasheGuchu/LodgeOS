@@ -72,7 +72,7 @@ export function ReservationActions({ reservation, today }: { reservation: Reserv
       {dialog === "cancel" ? (
         <Dialog open onOpenChange={(o) => (o ? null : setDialog(null))}>
           <DialogContent title={`Cancel ${reservation.reference}`} description="The rooms become available again. The booking and its history are kept.">
-            <form
+            <form method="post"
               noValidate
               className="flex flex-col gap-4"
               onSubmit={(e) => {
@@ -96,7 +96,7 @@ export function ReservationActions({ reservation, today }: { reservation: Reserv
       {dialog === "dates" ? (
         <Dialog open onOpenChange={(o) => (o ? null : setDialog(null))}>
           <DialogContent title={`Change dates of ${reservation.reference}`} description="Availability is checked again and the stay is priced at current rates.">
-            <form noValidate className="flex flex-col gap-4" onSubmit={changeDates}>
+            <form method="post" noValidate className="flex flex-col gap-4" onSubmit={changeDates}>
               {error ? <Alert tone="error">{error}</Alert> : null}
               <div className="grid grid-cols-2 gap-3">
                 <Field id="new-check-in" label="Arrival">

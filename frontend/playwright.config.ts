@@ -10,11 +10,15 @@ export default defineConfig({
   globalSetup: "./e2e/global-setup.ts",
   fullyParallel: false,
   workers: 1,
-  retries: process.env.CI ? 1 : 0,
+  // No retries: the specs run in order and build on each other's data, so a retried test
+  // re-creates records that already exist and hides the first, real failure.
+  retries: 0,
   reporter: process.env.CI ? [["github"], ["list"]] : "list",
   use: {
     baseURL: "http://localhost:3000",
     trace: "off",
+    // Kept for the CI artifact when something fails.
+    screenshot: "only-on-failure",
   },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] }, testIgnore: /mobile\.spec\.ts/ },
@@ -23,6 +27,8 @@ export default defineConfig({
   webServer: [
     {
       command: "uv run uvicorn app.main:app --port 8000",
+      // Request log in CI output, to see whether the API received a stalled request.
+      stdout: process.env.CI ? "pipe" : "ignore",
       cwd: "../backend",
       url: "http://127.0.0.1:8000/health/ready",
       reuseExistingServer: !process.env.CI,
