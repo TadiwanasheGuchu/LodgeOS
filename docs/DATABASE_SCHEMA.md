@@ -198,6 +198,16 @@ All use tenant RLS (ADR-0009). Amounts are NUMERIC(12,2); every line and documen
 
 `properties` gained `legal_name` and `tax_number`. Permissions `invoices.view`, `invoices.manage`, `invoices.credit` were added to the catalogue and granted to existing system roles.
 
+## Tables (Phase 3.4)
+
+All use tenant RLS (ADR-0010).
+
+| Table | Key columns | Notes |
+|---|---|---|
+| `payments` | `property_id`, `reservation_id` (composite FK), `method` (cash, card, bank_transfer, mobile_money, other), `currency`, `amount` (> 0), `received_on`, `payer_name`, `reference`, `note`, `idempotency_key` (UNIQUE per organisation), `recorded_by`, `recorded_at`, `reversed_at`, `reversed_by`, `reversal_reason` | Trigger `payments_guard`: the only allowed update sets the three reversal fields, once. No DELETE |
+| `payment_allocations` | `payment_id`, `invoice_id` (composite FKs with organisation), `amount` (non-zero; negative releases), `created_by`, `created_at` | INSERT and SELECT only |
+| `refunds` | `payment_id`, `property_id`, `method`, `currency`, `amount` (> 0), `refunded_on`, `reason`, `reference`, `idempotency_key` (UNIQUE per organisation), `recorded_by`, `recorded_at` | INSERT and SELECT only |
+
 ## Planned tables
 
-Next: `payments`, `payment_allocations`, `refunds` (3.4), `notifications` (3.5).
+Next: `notifications` (3.5).

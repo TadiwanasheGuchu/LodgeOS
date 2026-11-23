@@ -43,6 +43,11 @@ const LABELS: Record<string, string> = {
   "invoice.issued": "Issued an invoice",
   "invoice.discarded": "Discarded a draft invoice",
   "invoice.credited": "Issued a credit note",
+  "payment.recorded": "Recorded a payment",
+  "payment.allocated": "Applied a payment to an invoice",
+  "payment.released": "Took a payment off an invoice",
+  "payment.refunded": "Refunded money",
+  "payment.reversed": "Reversed a payment",
   "maintenance.reported": "Reported a maintenance problem",
   "maintenance.updated": "Updated a maintenance ticket",
   "maintenance.room_blocked": "Took a room out of sale",
@@ -109,6 +114,14 @@ export function describeChanges(entry: AuditLogEntry): string[] {
   }
   if (entry.action.startsWith("invoice.") && d.bill_to) {
     return [d.number ? `${String(d.number)} to ${String(d.bill_to)}: ${String(d.total)}` : `For ${String(d.bill_to)}`];
+  }
+  if (entry.action.startsWith("payment.") && d.amount) {
+    const amount = `${String(d.currency)} ${String(d.amount)}`;
+    if (entry.action === "payment.refunded") return [`${String(d.currency)} ${String(d.refunded)}: ${String(d.reason)}`];
+    if (entry.action === "payment.reversed") return [`${amount}: ${String(d.reason)}`];
+    if (entry.action === "payment.allocated") return [`${String(d.currency)} ${String(d.to)} to ${String(d.invoice)}`];
+    if (entry.action === "payment.released") return [`${String(d.currency)} ${String(d.released)} from ${String(d.invoice)}`];
+    return [d.payer ? `${amount} from ${String(d.payer)}` : amount];
   }
   if (entry.action === "maintenance.reported" && d.title) {
     return [String(d.title)];

@@ -20,6 +20,7 @@ from app.modules.invoicing.models import (
 )
 from app.modules.maintenance.models import MaintenanceTicket, RoomBlock
 from app.modules.organisations.models import Organisation, OrganisationUser
+from app.modules.payments.models import Payment, PaymentAllocation, Refund
 from app.modules.properties.models import Building, Property
 from app.modules.rates.models import RatePlan, RatePlanPrice, SeasonalRate, Tax
 from app.modules.reservations.models import Reservation, ReservationRoom, ReservationStatusChange
@@ -39,10 +40,13 @@ __all__ = [
     "MaintenanceTicket",
     "Organisation",
     "OrganisationUser",
+    "Payment",
+    "PaymentAllocation",
     "PermissionRecord",
     "Property",
     "RatePlan",
     "RatePlanPrice",
+    "Refund",
     "Reservation",
     "ReservationRoom",
     "ReservationStatusChange",

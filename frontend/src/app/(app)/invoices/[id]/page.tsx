@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { accessOf } from "@/lib/access";
-import { formatStayDate } from "@/lib/dates";
+import { formatStayDate, todayIn } from "@/lib/dates";
 import { formatMoney, sumMoney } from "@/lib/money";
 import { apiGet, requireOrganisation, ServerApiError } from "@/lib/server/api";
-import type { Invoice, Tax } from "@/lib/types";
+import { loadProperty } from "@/lib/server/properties";
+import type { Invoice, InvoicePayments as Money, Tax } from "@/lib/types";
+import { InvoicePayments } from "./invoice-payments";
 import { InvoiceStatusChip } from "../status";
 import { InvoiceActions } from "./invoice-actions";
 
@@ -29,6 +31,11 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
   const taxes = inv.status === "draft" && canManage
     ? (await apiGet<Tax[]>(`/api/v1/properties/${inv.property_id}/taxes`)).filter((t) => t.status === "active")
     : [];
+  const payments: Money | null =
+    inv.status === "issued" && access.canAt("payments.view", inv.property_id)
+      ? await apiGet<Money>(`/api/v1/invoices/${inv.id}/payments`)
+      : null;
+  const property = payments ? await loadProperty(inv.property_id) : null;
   const money = (a: string) => formatMoney(a, inv.currency);
   const balance = sumMoney([inv.total, `-${inv.credited}`]);
   const title = inv.status === "draft" ? "Draft invoice" : inv.seller.tax_number ? "Tax invoice" : "Invoice";
@@ -113,16 +120,31 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
             </div>
           ))}
           <dt className="font-semibold text-forest">Total</dt>
-          <dd className="text-right font-mono font-semibold tabular text-forest">{money(inv.total)}</dd>
+          <dd className="text-right font-mono font-semibold tabular whitespace-nowrap text-forest">{money(inv.total)}</dd>
           {inv.credited !== "0.00" ? (
             <>
               <dt className="text-muted">Credited</dt>
               <dd className="text-right font-mono tabular whitespace-nowrap">−{money(inv.credited)}</dd>
-              <dt className="font-semibold text-forest">Still owed</dt>
-              <dd className="text-right font-mono font-semibold tabular text-forest">{money(balance)}</dd>
+              {payments ? null : (
+                <>
+                  <dt className="font-semibold text-forest">Still owed</dt>
+                  <dd className="text-right font-mono font-semibold tabular whitespace-nowrap text-forest">{money(balance)}</dd>
+                </>
+              )}
             </>
           ) : null}
         </dl>
+        {payments && property ? (
+          <InvoicePayments
+            invoiceId={inv.id}
+            invoiceNumber={inv.number ?? ""}
+            propertyId={inv.property_id}
+            money={payments}
+            canRecord={access.canAt("payments.manage", inv.property_id)}
+            canRefund={access.canAt("payments.refund", inv.property_id)}
+            today={todayIn(property.timezone)}
+          />
+        ) : null}
         {inv.notes ? <p className="mt-6 border-t border-line pt-4 text-sm whitespace-pre-line">{inv.notes}</p> : null}
 
         {inv.credit_notes.length > 0 ? (

@@ -18,7 +18,10 @@ export type Permission =
   | "reservations.manage"
   | "invoices.view"
   | "invoices.manage"
-  | "invoices.credit";
+  | "invoices.credit"
+  | "payments.view"
+  | "payments.manage"
+  | "payments.refund";
 
 export type Role =
   | "owner"
@@ -592,4 +595,78 @@ export interface Invoice extends InvoiceSummary {
   seller: { name: string; legal_name: string | null; tax_number: string | null; address: string[]; phone: string | null; email: string | null };
   items: InvoiceItem[];
   credit_notes: CreditNote[];
+}
+
+export type PaymentMethod = "cash" | "card" | "bank_transfer" | "mobile_money" | "other";
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: "Cash",
+  card: "Card",
+  bank_transfer: "Bank transfer",
+  mobile_money: "Mobile money",
+  other: "Other",
+};
+
+export interface Refund {
+  id: string;
+  payment_id: string;
+  method: PaymentMethod;
+  currency: string;
+  amount: string;
+  refunded_on: string;
+  reason: string;
+  reference: string | null;
+  recorded_at: string;
+}
+
+export interface Payment {
+  id: string;
+  property_id: string;
+  reservation_id: string | null;
+  reservation_reference: string | null;
+  method: PaymentMethod;
+  currency: string;
+  amount: string;
+  received_on: string;
+  payer_name: string;
+  reference: string | null;
+  note: string | null;
+  recorded_by_name: string;
+  recorded_at: string;
+  reversed_at: string | null;
+  reversal_reason: string | null;
+  allocated: string;
+  refunded: string;
+  unallocated: string;
+  allocations: { invoice_id: string; invoice_number: string | null; amount: string; created_at: string; created_by_name: string }[];
+  refunds: Refund[];
+}
+
+export interface InvoicePayments {
+  invoice_id: string;
+  currency: string;
+  total: string;
+  credited: string;
+  paid: string;
+  balance: string;
+  payments: Payment[];
+}
+
+export interface MethodTotal {
+  method: PaymentMethod;
+  currency: string;
+  received: string;
+  refunded: string;
+  net: string;
+  count: number;
+}
+
+export interface CashUp {
+  property_id: string;
+  date_from: string;
+  date_to: string;
+  days: { date: string; totals: MethodTotal[] }[];
+  totals: MethodTotal[];
+  payments: Payment[];
+  refunds: Refund[];
 }

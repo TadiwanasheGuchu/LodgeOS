@@ -133,5 +133,60 @@ test("invoice a stay with an extra, issue it, then credit the extra", async ({ p
   const notes = page.getByRole("region", { name: "Credit notes" });
   await expect(notes).toContainText(/CN-\d{6}/);
   await expect(notes).toContainText("Dinner was complimentary");
-  await expect(doc).toContainText("Still owed");
+  await expect(doc.getByRole("region", { name: "Payments" })).toContainText(/Balance due\s*NAD\s2\s200\.00/);
+});
+
+test("deposit on booking, invoice, apply deposit, settle in cash, see the cash-up", async ({ page }) => {
+  await signedIn(page, seed.receptionist);
+  await page.goto("/reservations");
+  await page.getByRole("navigation", { name: "Property" }).getByRole("link", { name: propertyName }).click();
+  await expect(page.getByText(new RegExp(`^${propertyName} · stays from`))).toBeVisible();
+  await page.getByRole("link", { name: "New booking" }).click();
+  await expect(page.getByText(propertyName, { exact: true })).toBeVisible();
+  await page.getByLabel("Arrival").fill("2027-06-10");
+  await page.getByLabel("Departure").fill("2027-06-11");
+  await page.getByRole("button", { name: "Add a Chalet" }).click();
+  await page.getByLabel("First name").fill("Petrus");
+  await page.getByLabel("Last name").fill(`Shikongo ${seed.run}`);
+  await page.getByRole("button", { name: /^Book/ }).click();
+  await expect(page.getByRole("heading", { name: /^LOS-/ })).toBeVisible();
+  const booking = page.url();
+
+  // Deposit by bank transfer before any invoice exists.
+  await page.getByRole("button", { name: "Take a deposit" }).click();
+  let dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Bank transfer").check();
+  await dialog.getByLabel(/^Amount/).fill("500");
+  await dialog.getByLabel("Reference (optional)").fill(`EFT-${seed.run}`);
+  await dialog.getByRole("button", { name: "Record payment" }).click();
+  const panel = page.getByRole("region", { name: "Payments" });
+  await expect(panel).toContainText("NAD 500.00 not yet on an invoice");
+
+  await page.getByRole("button", { name: "Create invoice" }).click();
+  await page.getByRole("button", { name: "Issue invoice" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Issue invoice" }).click();
+  const number = (await page.getByRole("article").getByText(/^INV-\d{6}$/).textContent())!;
+
+  await page.goto(booking);
+  await panel.getByRole("button", { name: `Apply to ${number}` }).click();
+  await expect(panel).not.toContainText("not yet on an invoice");
+
+  // Settle the rest in cash from the invoice.
+  await page.getByRole("link", { name: number }).click();
+  const payments = page.getByRole("article").getByRole("region", { name: "Payments" });
+  await payments.getByRole("button", { name: "Record payment" }).click();
+  dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Cash").check();
+  await dialog.getByRole("button", { name: "Record payment" }).click();
+  await expect(payments).toContainText(/Balance due\s*NAD 0\.00/);
+  await expect(payments.getByRole("button", { name: "Record payment" })).toHaveCount(0);
+
+  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Payments" }).click();
+  await expect(page.getByRole("heading", { name: "Payments", level: 1 })).toBeVisible();
+  const prop = page.getByRole("navigation", { name: "Property" }).getByRole("link", { name: propertyName });
+  if (await prop.count()) await page.goto((await prop.getAttribute("href"))!);
+  const takings = page.getByRole("region", { name: "Cash-up" });
+  await expect(takings.getByRole("row", { name: /^Cash/ })).toBeVisible();
+  await expect(takings.getByRole("row", { name: /^Bank transfer/ })).toContainText("NAD 500.00");
+  await expect(page.getByRole("region", { name: "Payments received" })).toContainText(`EFT-${seed.run}`);
 });

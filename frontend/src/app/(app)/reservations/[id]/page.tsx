@@ -8,8 +8,9 @@ import { formatDateTime } from "@/lib/format";
 import { formatMoney, formatPercent } from "@/lib/money";
 import { apiGet, requireOrganisation, ServerApiError } from "@/lib/server/api";
 import { loadProperty } from "@/lib/server/properties";
-import { BOOKING_SOURCE_LABELS, RESERVATION_STATUS_LABELS, type InvoiceSummary, type ReservationDetail } from "@/lib/types";
+import { BOOKING_SOURCE_LABELS, RESERVATION_STATUS_LABELS, type InvoicePayments, type InvoiceSummary, type Payment, type ReservationDetail } from "@/lib/types";
 import { InvoiceStatusChip } from "../../invoices/status";
+import { BookingPayments } from "./booking-payments";
 import { CreateInvoice } from "./create-invoice";
 import { AssignRoom } from "./assign-room";
 import { ReservationActions } from "./reservation-actions";
@@ -33,6 +34,20 @@ export default async function ReservationPage({ params }: PageProps<"/reservatio
   const invoices = access.canAt("invoices.view", r.property_id)
     ? await apiGet<InvoiceSummary[]>(`/api/v1/properties/${r.property_id}/invoices?reservation_id=${r.id}`)
     : null;
+  const payments = access.canAt("payments.view", r.property_id)
+    ? await apiGet<Payment[]>(`/api/v1/properties/${r.property_id}/payments?reservation_id=${r.id}`)
+    : null;
+  const openInvoices = payments && invoices
+    ? (
+        await Promise.all(
+          invoices
+            .filter((i) => i.status === "issued")
+            .map(async (i) => ({ i, m: await apiGet<InvoicePayments>(`/api/v1/invoices/${i.id}/payments`) })),
+        )
+      )
+        .filter(({ m }) => m.balance !== "0.00" && !m.balance.startsWith("-"))
+        .map(({ i, m }) => ({ id: i.id, number: i.number ?? "", balance: m.balance }))
+    : [];
   const long = { weekday: "short", day: "numeric", month: "short", year: "numeric" } as const;
 
   return (
@@ -140,6 +155,18 @@ export default async function ReservationPage({ params }: PageProps<"/reservatio
               )}
               {canInvoice && r.status !== "cancelled" && r.status !== "no_show" ? <CreateInvoice reservationId={r.id} propertyId={r.property_id} /> : null}
             </section>
+          ) : null}
+
+          {payments ? (
+            <BookingPayments
+              propertyId={r.property_id}
+              reservationId={r.id}
+              currency={r.currency}
+              payments={payments}
+              openInvoices={openInvoices}
+              canRecord={access.canAt("payments.manage", r.property_id) && r.status !== "cancelled"}
+              today={todayIn(property.timezone)}
+            />
           ) : null}
 
           <section aria-labelledby="history-heading" className="rounded-lg border border-line bg-white px-5 py-4 text-sm">

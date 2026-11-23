@@ -29,6 +29,9 @@ class Permission(enum.StrEnum):
     INVOICES_VIEW = "invoices.view"
     INVOICES_MANAGE = "invoices.manage"
     INVOICES_CREDIT = "invoices.credit"
+    PAYMENTS_VIEW = "payments.view"
+    PAYMENTS_MANAGE = "payments.manage"
+    PAYMENTS_REFUND = "payments.refund"
 
 
 # Permissions about a property's setup and rooms. When a role is granted for one property,
@@ -36,7 +39,9 @@ class Permission(enum.StrEnum):
 PROPERTY_PERMISSIONS: frozenset[Permission] = frozenset(
     p
     for p in Permission
-    if p.value.startswith(("properties.", "rooms.", "rates.", "reservations.", "invoices."))
+    if p.value.startswith(
+        ("properties.", "rooms.", "rates.", "reservations.", "invoices.", "payments.")
+    )
 )
 
 # Organisation-level permissions that any role grant carries organisation-wide, because
@@ -65,6 +70,9 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
             Permission.INVOICES_VIEW,
             Permission.INVOICES_MANAGE,
             Permission.INVOICES_CREDIT,
+            Permission.PAYMENTS_VIEW,
+            Permission.PAYMENTS_MANAGE,
+            Permission.PAYMENTS_REFUND,
         }
     ),
     # Front desk marks rooms clean after a quick check and reports faults, but does not
@@ -80,6 +88,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
             Permission.RESERVATIONS_MANAGE,
             Permission.INVOICES_VIEW,
             Permission.INVOICES_MANAGE,
+            Permission.PAYMENTS_VIEW,
+            Permission.PAYMENTS_MANAGE,
         }
     ),
     Role.HOUSEKEEPING: frozenset(
@@ -108,6 +118,9 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
             Permission.INVOICES_VIEW,
             Permission.INVOICES_MANAGE,
             Permission.INVOICES_CREDIT,
+            Permission.PAYMENTS_VIEW,
+            Permission.PAYMENTS_MANAGE,
+            Permission.PAYMENTS_REFUND,
         }
     ),
 }

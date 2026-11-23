@@ -3,7 +3,7 @@
 _Last updated: 2026-11-23_
 
 **Current phase:** 3 — Operations and finance
-**Current milestone:** 3.3 complete (invoices and credit notes)
+**Current milestone:** 3.4 complete (payments, refunds, cash-up)
 
 ## Phase 3 plan
 
@@ -12,8 +12,27 @@ _Last updated: 2026-11-23_
 | 3.1 | Maintenance tickets (report, assign, work, resolve), dated room blocks that take a room out of sale and count against availability | ✅ Done |
 | 3.2 | Housekeeping task lists per day (departures, stay-overs, arrivals), assignment, mobile-first | ✅ Done |
 | 3.3 | Invoices from reservations (price snapshot), extras, issuing with gapless numbers, credit notes, printable invoice | ✅ Done |
-| 3.4 | Payments, allocations, refunds, reconciliation | Planned |
+| 3.4 | Payments, deposits, allocations, refunds, reversals, daily cash-up | ✅ Done |
 | 3.5 | Notifications (email adapter, mock environment first) | Planned |
+
+## Phase 3.4 acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| Deposits are taken on a booking before invoicing and applied to the invoice later | ✅ Tested (API and E2E) |
+| Paying an invoice allocates up to its balance; the rest stays on account | ✅ Tested |
+| Invoice balance = total − credit notes − payments; overpayment after a credit note is released and refunded in one step | ✅ Tested |
+| Retried or double-submitted payments and refunds are recorded once (idempotency keys, also under concurrency) | ✅ Tested |
+| Two payments cannot over-allocate one invoice (invoice lock; deterministic two-transaction test fails without it) | ✅ Tested |
+| Payments are never edited or deleted; reversal is recorded once and releases allocations; refunded payments cannot be reversed | ✅ Tested (API and database) |
+| Cash-up shows received, refunded and net per method and day, without reversed payments | ✅ Tested (API and E2E) |
+| Front desk records payments; only owners, managers and accountants refund and reverse; other tenants get 404 | ✅ Tested |
+
+## Test results (milestone 3.4)
+
+- Backend: **147 passed, 0 failed** (8 new). Lint, types, migration round trip clean.
+- Frontend unit and component: **17 passed**. End-to-end: **31 passed** (new: deposit on a booking → invoice → apply deposit → settle in cash → cash-up shows both methods).
+- Not yet done: card gateway payments (Phase 4), multi-currency settlement, receipts by email (3.5), bank statement import.
 
 ## Phase 3.3 acceptance criteria
 
@@ -212,5 +231,5 @@ See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no password reset, no
 
 ## Next
 
-1. Milestone 3.4: payments, allocations, refunds, reconciliation.
-2. Milestone 3.5: invoices, payments, refunds, reconciliation, notifications.
+1. Milestone 3.5: notifications (transactional email adapter against a mock provider first): booking confirmations, invoices and receipts.
+2. Then Phase 4: public booking engine, guest portal, payment gateway integration.
