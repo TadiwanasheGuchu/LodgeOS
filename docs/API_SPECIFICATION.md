@@ -134,6 +134,13 @@ Status flow: provisional → confirmed → checked in → checked out; provision
 | POST | `/api/v1/room-blocks/{id}/release` | `rooms.maintenance_update` | Put the room back on sale |
 | GET | `/api/v1/properties/{id}/room-blocks?from&to` | `rooms.view` | Active blocks overlapping the range (calendar) |
 
+## Endpoints (Phase 3.2)
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| GET | `/api/v1/properties/{id}/housekeeping?date` | `rooms.view` | Every active room with what it needs that day (`departure`, `stayover`, `arrival`, `vacant` or null), whether a guest is leaving, has left, is staying or arriving, the head count (no names), the day's task, and who can be assigned. Defaults to today in the property's timezone |
+| POST | `/api/v1/properties/{id}/housekeeping/{date}/rooms/{room_id}` | `rooms.housekeeping_update` | `{action: assign\|start\|done\|decline\|reopen, assigned_to?, note?}`. Assign for today or later; other actions today only. `done` marks a dirty room clean; `reopen` marks it dirty; `decline` only for stay-overs, with a note. 409 while a departing guest is still checked in. Returns the updated day |
+
 ## Role permissions
 
 Defaults of the six system roles (organisation-wide grants). A role granted for one property applies its `properties.*` and `rooms.*` permissions to that property only.

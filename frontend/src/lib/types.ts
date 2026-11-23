@@ -485,3 +485,39 @@ export interface MaintenanceTicket {
   closed_at: string | null;
   blocks: RoomBlockInfo[];
 }
+
+export type HousekeepingKind = "departure" | "stayover" | "arrival" | "vacant";
+
+export interface HousekeepingRoom {
+  room_id: string;
+  number: string;
+  floor: string | null;
+  building_name: string | null;
+  room_type_code: string;
+  housekeeping_status: HousekeepingStatus;
+  maintenance_status: MaintenanceStatus;
+  blocked: boolean;
+  kind: HousekeepingKind | null;
+  departing: boolean;
+  guest_left: boolean;
+  staying: boolean;
+  arriving: boolean;
+  guests: number;
+  task: {
+    status: "pending" | "in_progress" | "done" | "declined";
+    kind: HousekeepingKind;
+    assigned_to: string | null;
+    assigned_to_name: string | null;
+    note: string | null;
+    started_at: string | null;
+    completed_at: string | null;
+    completed_by_name: string | null;
+  } | null;
+}
+
+export interface HousekeepingBoard {
+  date: string;
+  today: string;
+  rooms: HousekeepingRoom[];
+  assignees: { user_id: string; name: string }[];
+}

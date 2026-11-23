@@ -15,6 +15,7 @@ from app.core.redis import close_redis, get_redis
 from app.modules.access.invitations import router as invitations_router
 from app.modules.access.router import router as access_router
 from app.modules.auth.router import router as auth_router
+from app.modules.housekeeping.router import router as housekeeping_router
 from app.modules.maintenance.router import router as maintenance_router
 from app.modules.organisations.router import router as organisation_router
 from app.modules.properties.router import router as properties_router
@@ -95,6 +96,7 @@ def create_app() -> FastAPI:
     app.include_router(rates_router)
     app.include_router(reservations_router)
     app.include_router(maintenance_router)
+    app.include_router(housekeeping_router)
     return app
 
 

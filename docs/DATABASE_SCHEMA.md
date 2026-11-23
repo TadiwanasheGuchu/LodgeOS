@@ -178,6 +178,12 @@ Both use tenant RLS; the app role cannot delete from either.
 | `maintenance_tickets` | `property_id`, `room_id` (nullable, composite FK `(room_id, property_id)`), `location`, `title`, `description`, `priority` (low, normal, urgent), `status` (open, in_progress, resolved, cancelled), `reported_by`, `assigned_to`, `resolution`, `closed_at` | CHECK: `closed_at` set exactly when resolved or cancelled |
 | `room_blocks` | `room_id`, `ticket_id`, `start_date`, `end_date` (exclusive), `reason`, `status` (active, released), `created_by` | CHECK `end_date > start_date`; partial index `ix_room_blocks_active`. Active blocks are subtracted from availability per night; created under the room-type lock (ADR-0008) |
 
+## Tables (Phase 3.2)
+
+| Table | Key columns | Notes |
+|---|---|---|
+| `housekeeping_tasks` | `property_id`, `room_id` (composite FK), `task_date`, `kind` (departure, stayover, arrival, vacant), `status` (pending, in_progress, done, declined), `assigned_to`, `note`, `started_at`, `completed_at`, `completed_by` | Tenant RLS. UNIQUE `(room_id, task_date)`; CHECK `completed_at` set exactly when done or declined; declined needs a note. Written only when someone acts on a room; the list itself is derived from bookings |
+
 ## Planned tables
 
-Next: `housekeeping_tasks` (3.2), `invoices`, `invoice_items`, `credit_notes` (3.3), `payments`, `payment_allocations`, `refunds` (3.4), `notifications` (3.5).
+Next: `invoices`, `invoice_items`, `credit_notes` (3.3), `payments`, `payment_allocations`, `refunds` (3.4), `notifications` (3.5).
