@@ -19,6 +19,7 @@ from app.modules.housekeeping.router import router as housekeeping_router
 from app.modules.invoicing.router import router as invoicing_router
 from app.modules.maintenance.router import router as maintenance_router
 from app.modules.organisations.router import router as organisation_router
+from app.modules.payments.router import router as payments_router
 from app.modules.properties.router import router as properties_router
 from app.modules.rates.router import router as rates_router
 from app.modules.reservations.router import router as reservations_router
@@ -99,6 +100,7 @@ def create_app() -> FastAPI:
     app.include_router(maintenance_router)
     app.include_router(housekeeping_router)
     app.include_router(invoicing_router)
+    app.include_router(payments_router)
     return app
 
 
