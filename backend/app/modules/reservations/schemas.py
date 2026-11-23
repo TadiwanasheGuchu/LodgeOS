@@ -180,3 +180,23 @@ class TodayOut(BaseModel):
     departures: list[ReservationSummary]
     in_house: int
     unassigned_arrivals: int
+
+
+class DateChange(_In):
+    check_in: date
+    check_out: date
+
+    @model_validator(mode="after")
+    def _order(self) -> Self:
+        if self.check_out <= self.check_in:
+            raise ValueError("Check-out must be after check-in.")
+        return self
+
+
+class GuestUpdate(_In):
+    first_name: str | None = Field(default=None, min_length=1, max_length=100)
+    last_name: str | None = Field(default=None, min_length=1, max_length=100)
+    email: EmailStr | None = None
+    phone: str | None = Field(default=None, max_length=40)
+    country_code: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
+    notes: str | None = Field(default=None, max_length=2000)

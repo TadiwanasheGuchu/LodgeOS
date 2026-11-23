@@ -111,6 +111,18 @@ All amounts are decimal strings, e.g. `"1250.00"`.
 | GET | `/api/v1/properties/{id}/calendar?start&days` | `reservations.view` | Rooms and active stays for up to 31 days |
 | GET | `/api/v1/properties/{id}/today` | `reservations.view` | Arrivals, departures, in-house count and unassigned arrivals for today in the property's timezone |
 
+## Endpoints (Phase 2.3)
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| POST | `/api/v1/reservations/{id}/check-in` | `reservations.manage` | Confirmed bookings, from the arrival date (property timezone) and before departure; every booked room needs an assigned room that is not out of order |
+| POST | `/api/v1/reservations/{id}/check-out` | `reservations.manage` | From checked in; marks each room dirty for housekeeping; an early departure frees the remaining nights |
+| POST | `/api/v1/reservations/{id}/no-show` | `reservations.manage` | Provisional or confirmed, from the arrival date; frees the rooms |
+| PATCH | `/api/v1/reservations/{id}/dates` | `reservations.manage` | `{check_in, check_out}` for provisional or confirmed bookings; same lock-and-count as a new booking (not counting its own rooms); re-priced at current rates; assigned rooms kept or 409 |
+| PATCH | `/api/v1/guests/{id}` | `reservations.manage` | Correct name and contact details; the audit log records field names only |
+
+Status flow: provisional → confirmed → checked in → checked out; provisional or confirmed → cancelled (reason) or no-show.
+
 ## Role permissions
 
 Defaults of the six system roles (organisation-wide grants). A role granted for one property applies its `properties.*` and `rooms.*` permissions to that property only.

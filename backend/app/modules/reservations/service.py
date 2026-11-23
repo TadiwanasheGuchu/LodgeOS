@@ -14,7 +14,7 @@ import secrets
 import uuid
 from collections import Counter
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -30,7 +30,7 @@ from app.modules.reservations.models import (
     ReservationStatus,
     ReservationStatusChange,
 )
-from app.modules.rooms.models import MaintenanceStatus, Room, RoomType
+from app.modules.rooms.models import HousekeepingStatus, MaintenanceStatus, Room, RoomType
 
 REFERENCE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no 0/O, 1/I
 
@@ -81,8 +81,14 @@ async def sellable_rooms(db: AsyncSession, room_type_id: uuid.UUID) -> int:
 
 
 async def availability(
-    db: AsyncSession, room_type_id: uuid.UUID, check_in: date, check_out: date
+    db: AsyncSession,
+    room_type_id: uuid.UUID,
+    check_in: date,
+    check_out: date,
+    exclude_reservation_id: uuid.UUID | None = None,
 ) -> list[NightAvailability]:
+    """Free rooms per night. ``exclude_reservation_id`` leaves a booking's own rooms out of
+    the count, for changing that booking's dates."""
     sellable = await sellable_rooms(db, room_type_id)
     rows = await db.execute(
         text(
@@ -91,12 +97,14 @@ async def availability(
                    (SELECT count(*) FROM reservation_rooms rr
                      WHERE rr.room_type_id = :rt
                        AND rr.status IN ('provisional', 'confirmed', 'checked_in')
-                       AND rr.check_in <= d::date AND rr.check_out > d::date) AS booked
+                       AND rr.check_in <= d::date AND rr.check_out > d::date
+                       AND (CAST(:excl AS uuid) IS NULL OR rr.reservation_id <> CAST(:excl AS uuid))
+                   ) AS booked
             FROM generate_series(CAST(:ci AS date), CAST(:co AS date) - 1, interval '1 day') d
             ORDER BY night
             """
         ),
-        {"rt": room_type_id, "ci": check_in, "co": check_out},
+        {"rt": room_type_id, "ci": check_in, "co": check_out, "excl": exclude_reservation_id},
     )
     return [NightAvailability(r.night, sellable, int(r.booked)) for r in rows]
 
@@ -277,8 +285,17 @@ async def create_reservation(
 
 
 ALLOWED_TRANSITIONS: dict[str, set[str]] = {
-    ReservationStatus.PROVISIONAL: {ReservationStatus.CONFIRMED, ReservationStatus.CANCELLED},
-    ReservationStatus.CONFIRMED: {ReservationStatus.CANCELLED, ReservationStatus.NO_SHOW},
+    ReservationStatus.PROVISIONAL: {
+        ReservationStatus.CONFIRMED,
+        ReservationStatus.CANCELLED,
+        ReservationStatus.NO_SHOW,
+    },
+    ReservationStatus.CONFIRMED: {
+        ReservationStatus.CHECKED_IN,
+        ReservationStatus.CANCELLED,
+        ReservationStatus.NO_SHOW,
+    },
+    ReservationStatus.CHECKED_IN: {ReservationStatus.CHECKED_OUT},
 }
 
 
@@ -289,23 +306,51 @@ async def change_status(
     *,
     user_id: uuid.UUID,
     reason: str | None = None,
+    today: date | None = None,
 ) -> None:
-    """Confirm, cancel or mark as no-show. Check-in and check-out arrive in Phase 2.3."""
+    """Move a booking through its life: confirm, check in, check out, cancel, no-show.
+
+    ``today`` is the property's local date; check-in and no-show depend on it.
+    """
     if to not in ALLOWED_TRANSITIONS.get(reservation.status, set()):
         current = reservation.status.replace("_", " ")
         raise BookingError(f"A {current} booking cannot become {to.replace('_', ' ')}.")
     if to == ReservationStatus.CANCELLED and not reason:
         raise BookingError("Give a reason for the cancellation.", 422)
-    previous = reservation.status
-    reservation.status = to
-    reservation.cancellation_reason = reason if to == ReservationStatus.CANCELLED else None
     rooms = (
         await db.scalars(
             select(ReservationRoom).where(ReservationRoom.reservation_id == reservation.id)
         )
     ).all()
-    for room in rooms:
-        room.status = to
+    if to == ReservationStatus.CHECKED_IN:
+        assert today is not None
+        if today < reservation.check_in:
+            raise BookingError(f"Check-in opens on {reservation.check_in.isoformat()}.")
+        if today >= reservation.check_out:
+            raise BookingError("The stay has already ended. Mark it as a no-show instead.")
+        for rr in rooms:
+            if rr.room_id is None:
+                raise BookingError("Assign a room to every booked room before check-in.")
+            room = await db.get(Room, rr.room_id)
+            assert room is not None
+            if room.maintenance_status == MaintenanceStatus.OUT_OF_ORDER:
+                raise BookingError(f"Room {room.number} is out of order. Move the guest first.")
+    if to == ReservationStatus.NO_SHOW:
+        assert today is not None
+        if today < reservation.check_in:
+            raise BookingError("A booking can only be marked as a no-show from its arrival day.")
+    previous = reservation.status
+    reservation.status = to
+    reservation.cancellation_reason = reason if to == ReservationStatus.CANCELLED else None
+    for rr in rooms:
+        rr.status = to
+        if to == ReservationStatus.CHECKED_OUT and rr.room_id is not None:
+            # Hand-off to housekeeping: the room needs cleaning before the next guest.
+            room = await db.get(Room, rr.room_id)
+            assert room is not None
+            room.housekeeping_status = HousekeepingStatus.DIRTY
+            room.housekeeping_updated_at = datetime.now(UTC)
+            room.housekeeping_updated_by = user_id
     db.add(
         ReservationStatusChange(
             organisation_id=reservation.organisation_id,
@@ -375,3 +420,95 @@ async def assign_room(db: AsyncSession, rr: ReservationRoom, room_id: uuid.UUID 
             raise BookingError(f"Room {room.number} is out of order.")
     rr.room_id = room_id
     await db.flush()
+
+
+CHANGEABLE = (ReservationStatus.PROVISIONAL, ReservationStatus.CONFIRMED)
+
+
+async def change_dates(
+    db: AsyncSession,
+    *,
+    prop: Property,
+    reservation: Reservation,
+    check_in: date,
+    check_out: date,
+    user_id: uuid.UUID,
+) -> tuple[Decimal, Decimal]:
+    """Move a booking to new dates. Goes through the same lock-and-count as a new booking,
+    not counting the booking's own rooms, and re-prices every room at today's rates.
+    Assigned rooms stay assigned; if one is taken on the new dates the exclusion constraint
+    refuses the change. Returns (old total, new total)."""
+    if reservation.status not in CHANGEABLE:
+        raise BookingError("Only provisional or confirmed bookings can change dates.")
+    if check_out <= check_in:
+        raise BookingError("Check-out must be after check-in.", 422)
+    rooms = (
+        await db.scalars(
+            select(ReservationRoom).where(ReservationRoom.reservation_id == reservation.id)
+        )
+    ).all()
+    type_ids = sorted({rr.room_type_id for rr in rooms})
+    locked = (
+        await db.scalars(
+            select(RoomType)
+            .where(RoomType.id.in_(type_ids))
+            .order_by(RoomType.id)
+            .with_for_update()
+        )
+    ).all()
+    names = {rt.id: rt.name for rt in locked}
+
+    priced = []
+    for rr in rooms:
+        try:
+            priced.append(
+                await price_stay(
+                    db,
+                    prop,
+                    rate_plan_id=rr.rate_plan_id,
+                    room_type_id=rr.room_type_id,
+                    check_in=check_in,
+                    check_out=check_out,
+                    adults=rr.adults,
+                    children=rr.children,
+                )
+            )
+        except pricing.QuoteError as exc:
+            raise BookingError(f"{names[rr.room_type_id]}: {exc}", 422) from None
+
+    wanted = Counter(rr.room_type_id for rr in rooms)
+    for type_id, count in wanted.items():
+        for night in await availability(db, type_id, check_in, check_out, reservation.id):
+            if night.free < count:
+                free = night.free
+                raise BookingError(
+                    f"Only {free} {names[type_id]} {'room is' if free == 1 else 'rooms are'} "
+                    f"free on {night.night.isoformat()}."
+                )
+
+    old_total = reservation.total_amount
+    old_dates = f"{reservation.check_in.isoformat()} to {reservation.check_out.isoformat()}"
+    for rr, p in zip(rooms, priced, strict=True):
+        rr.check_in, rr.check_out = check_in, check_out
+        rr.total_amount = p.quote.total
+        rr.tax_amount = p.quote.tax_total
+        rr.price_snapshot = _snapshot(p.quote, p.plan.name, p.room_type.name)
+    reservation.check_in, reservation.check_out = check_in, check_out
+    reservation.total_amount = sum((p.quote.total for p in priced), Decimal("0.00"))
+    reservation.tax_amount = sum((p.quote.tax_total for p in priced), Decimal("0.00"))
+    db.add(
+        ReservationStatusChange(
+            organisation_id=reservation.organisation_id,
+            property_id=reservation.property_id,
+            reservation_id=reservation.id,
+            from_status=reservation.status,
+            to_status=reservation.status,
+            reason=(
+                f"Dates changed from {old_dates} to {check_in.isoformat()} to "
+                f"{check_out.isoformat()}; total {old_total} to {reservation.total_amount}"
+            ),
+            changed_by=user_id,
+        )
+    )
+    await db.flush()
+    return old_total, reservation.total_amount
