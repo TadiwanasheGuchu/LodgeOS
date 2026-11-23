@@ -5,6 +5,7 @@ All notable changes are recorded here. Format based on [Keep a Changelog](https:
 ## [Unreleased]
 
 ### Added
+- Maintenance: report a problem for a room or an area (anyone who sees rooms), urgent-first ticket list, start work, assign, resolve with a note, closed-ticket history. Rooms can be taken out of sale for specific dates; the block counts against availability, is refused if guests are in the room or it would oversell, shows on the booking calendar, and is released when the ticket is fixed.
 - Check-in (needs an assigned room, from the arrival date), check-out (room handed to housekeeping as dirty), no-shows, and changing a booking's dates with availability re-checked and the stay re-priced. Guest details can be corrected.
 - Booking calendar: rooms by date with stays as bars, bookings without a room shown per room type, weekend nights shaded.
 - Assigning, moving and removing a booking's physical room, offering only rooms free for every night.

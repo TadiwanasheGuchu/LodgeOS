@@ -456,3 +456,32 @@ export interface FreeRoom {
   housekeeping_status: HousekeepingStatus;
   maintenance_status: MaintenanceStatus;
 }
+
+export interface RoomBlockInfo {
+  id: string;
+  room_id: string;
+  ticket_id: string | null;
+  start_date: string;
+  end_date: string;
+  reason: string;
+  status: "active" | "released";
+}
+
+export interface MaintenanceTicket {
+  id: string;
+  property_id: string;
+  room_id: string | null;
+  room_number: string | null;
+  location: string | null;
+  title: string;
+  description: string | null;
+  priority: "low" | "normal" | "urgent";
+  status: "open" | "in_progress" | "resolved" | "cancelled";
+  reported_by_name: string;
+  assigned_to: string | null;
+  assigned_to_name: string | null;
+  resolution: string | null;
+  created_at: string;
+  closed_at: string | null;
+  blocks: RoomBlockInfo[];
+}

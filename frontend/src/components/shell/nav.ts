@@ -1,7 +1,7 @@
 import type { Access } from "@/lib/access";
 import type { Permission } from "@/lib/types";
 
-export type NavIcon = "overview" | "settings" | "team" | "activity" | "rooms" | "properties" | "reservations" | "calendar";
+export type NavIcon = "overview" | "settings" | "team" | "activity" | "rooms" | "properties" | "reservations" | "calendar" | "maintenance";
 
 export interface NavItem {
   href: string;
@@ -17,6 +17,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/calendar", label: "Calendar", icon: "calendar", permission: "reservations.view" },
   { href: "/reservations", label: "Reservations", icon: "reservations", permission: "reservations.view" },
   { href: "/rooms", label: "Room status", icon: "rooms", permission: "rooms.view" },
+  { href: "/maintenance", label: "Maintenance", icon: "maintenance", permission: "rooms.view" },
   { href: "/properties", label: "Properties", icon: "properties", permission: "properties.view" },
   { href: "/team", label: "Team", icon: "team", permission: "members.view" },
   { href: "/activity", label: "Activity log", icon: "activity", permission: "audit.view" },
