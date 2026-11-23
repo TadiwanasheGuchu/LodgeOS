@@ -17,6 +17,7 @@ from app.core.errors import not_found
 from app.modules.audit import service as audit
 from app.modules.auth.deps import DB, Auth, AuthContext, client_ip
 from app.modules.auth.permissions import Permission
+from app.modules.guest_portal import service as guest_links
 from app.modules.guests.models import Guest
 from app.modules.invoicing.models import Invoice, InvoiceItem, InvoiceStatus
 from app.modules.invoicing.service import credited_total
@@ -145,7 +146,9 @@ async def email_confirmation(
             .order_by(ReservationRoom.check_in, ReservationRoom.id)
         )
     ).all()
+    manage_url, _ = await guest_links.create_link(db, r, user_id=auth.user.id)
     rendered = templates.booking_confirmation(
+        manage_url=manage_url,
         venue=_venue(prop),
         guest_name=f"{guest.first_name} {guest.last_name}",
         reference=r.reference,

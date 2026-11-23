@@ -56,3 +56,54 @@ test("owner opens online booking; a guest books from a phone", async ({ page }) 
   await page.goto("/book/no-such-org/no-such-property");
   await expect(page.getByText(/not found|could not be found/i).first()).toBeVisible();
 });
+
+test("staff share a guest link; the guest sends arrival details and asks to cancel", async ({ page }) => {
+  await signedIn(page, seed.receptionist);
+  await page.goto("/reservations");
+  await page.getByRole("navigation", { name: "Property" }).getByRole("link", { name: propertyName }).click();
+  await expect(page.getByText(new RegExp(`^${propertyName} · stays from`))).toBeVisible();
+  await page.getByRole("link", { name: "New booking" }).click();
+  await expect(page.getByText(propertyName, { exact: true })).toBeVisible();
+  await page.getByLabel("Arrival").fill("2027-10-05");
+  await page.getByLabel("Departure").fill("2027-10-07");
+  await page.getByRole("button", { name: "Add a Chalet" }).click();
+  await page.getByLabel("First name").fill("Tangeni");
+  await page.getByLabel("Last name").fill(`Haufiku ${seed.run}`);
+  await page.getByRole("button", { name: /^Book/ }).click();
+  await expect(page.getByRole("heading", { name: /^LOS-/ })).toBeVisible();
+  const booking = page.url();
+
+  await page.getByRole("button", { name: "Share guest link" }).click();
+  const link = (await page.locator("code").filter({ hasText: "/stay/" }).textContent())!;
+  await expect(page.getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=/);
+
+  await page.context().clearCookies();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(new URL(link).pathname);
+  await expect(page.getByRole("region", { name: "Booking" })).toContainText(`Booking for Tangeni Haufiku ${seed.run}`);
+  await page.getByLabel("Expected arrival time").fill("20:30");
+  await page.getByLabel("Message to the property (optional)").fill("Driving from Windhoek");
+  await page.getByRole("button", { name: "Send to the property" }).click();
+  await expect(page.getByText("Thank you. The property has your details.")).toBeVisible();
+  await page.getByRole("button", { name: "Need to cancel?" }).click();
+  await page.getByLabel("Reason").fill("Change of plans");
+  await page.getByRole("button", { name: "Ask to cancel" }).click();
+  await expect(page.getByText("You asked to cancel (Change of plans).")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await signedIn(page, seed.receptionist);
+  await page.goto(booking);
+  await expect(page.getByText("Arriving around 20:30")).toBeVisible();
+  await expect(page.getByText("Driving from Windhoek")).toBeVisible();
+  const banner = page.getByRole("alert").filter({ hasText: "The guest asked to cancel" });
+  await expect(banner).toContainText("Change of plans");
+  await banner.getByRole("button", { name: "Keep the booking" }).click();
+  await expect(page.getByText("The guest asked to cancel")).toHaveCount(0);
+
+  // A withdrawn link stops working.
+  await page.getByRole("button", { name: "Withdraw all guest links" }).click();
+  await expect(page.getByText("Withdrew 1 link.")).toBeVisible();
+  await page.goto(new URL(link).pathname);
+  await expect(page.getByText("This link has expired or was withdrawn. Please contact the property.")).toBeVisible();
+});

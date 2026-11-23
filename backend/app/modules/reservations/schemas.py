@@ -108,6 +108,13 @@ class ReservationDetail(ReservationSummary):
     tax_amount: Decimal
     notes: str | None
     cancellation_reason: str | None
+    hold_expires_at: datetime | None = None
+    # From the guest portal (ADR-0013).
+    guest_arrival_time: str | None = None
+    guest_message: str | None = None
+    guest_updated_at: datetime | None = None
+    cancellation_requested_at: datetime | None = None
+    cancellation_request_reason: str | None = None
     guest: GuestOut
     rooms: list[ReservationRoomOut]
     history: list[StatusChangeOut]

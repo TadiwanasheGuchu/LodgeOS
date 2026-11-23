@@ -9,6 +9,7 @@ from app.modules.access.models import (
 )
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import User, UserSession
+from app.modules.guest_portal.models import GuestAccessToken
 from app.modules.guests.models import Guest
 from app.modules.housekeeping.models import HousekeepingTask
 from app.modules.invoicing.models import (
@@ -34,6 +35,7 @@ __all__ = [
     "CreditNoteItem",
     "DocumentSequence",
     "Guest",
+    "GuestAccessToken",
     "HousekeepingTask",
     "Invitation",
     "Invoice",

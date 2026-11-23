@@ -75,7 +75,13 @@ def _rows_html(rows: list[Row]) -> str:
     return "".join(out)
 
 
-def _layout(venue: Venue, title: str, intro: list[str], blocks: list[Block]) -> tuple[str, str]:
+def _layout(
+    venue: Venue,
+    title: str,
+    intro: list[str],
+    blocks: list[Block],
+    link: tuple[str, str] | None = None,
+) -> tuple[str, str]:
     """Text and HTML bodies with the venue's details as the footer."""
     footer_lines = [venue.legal_name or venue.name, *venue.address]
     if venue.phone:
@@ -91,6 +97,8 @@ def _layout(venue: Venue, title: str, intro: list[str], blocks: list[Block]) -> 
             text_parts.append(b.heading.upper())
         text_parts += [f"{r.label}: {r.value}" for r in b.rows]
         text_parts.append("")
+    if link:
+        text_parts += [f"{link[0]}: {link[1]}", ""]
     text_parts += ["--", *footer_lines]
 
     blocks_html = "".join(
@@ -105,6 +113,13 @@ def _layout(venue: Venue, title: str, intro: list[str], blocks: list[Block]) -> 
     )
     intro_html = "".join(f'<p style="margin:0 0 12px">{escape(p)}</p>' for p in intro)
     footer_html = "<br>".join(escape(line) for line in footer_lines)
+    link_html = (
+        f'<p style="margin:24px 0 0"><a href="{escape(link[1], quote=True)}" '
+        f'style="display:inline-block;background:{FOREST};color:#ffffff;text-decoration:none;'
+        f'padding:10px 16px;border-radius:6px;font-weight:600">{escape(link[0])}</a></p>'
+        if link
+        else ""
+    )
     html = (
         '<!doctype html><html><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -115,7 +130,7 @@ def _layout(venue: Venue, title: str, intro: list[str], blocks: list[Block]) -> 
         f"{escape(venue.name)}</p>"
         f'<div style="background:#ffffff;border:1px solid {LINE};border-radius:8px;padding:24px">'
         f'<h1 style="margin:0 0 16px;font-size:18px;color:{FOREST}">{escape(title)}</h1>'
-        f"{intro_html}{blocks_html}</div>"
+        f"{intro_html}{blocks_html}{link_html}</div>"
         f'<p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:#5B6E6A">'
         f"{footer_html}</p></div></body></html>"
     )
@@ -145,6 +160,7 @@ def booking_confirmation(
     currency: str,
     total: Decimal,
     notes: str | None = None,
+    manage_url: str | None = None,
 ) -> Rendered:
     nights = (check_out - check_in).days
     title = (
@@ -182,7 +198,8 @@ def booking_confirmation(
         None,
         [Row("Questions or changes", "Reply to this email or call us.")],
     )
-    text, html = _layout(venue, title, intro, [*blocks, outro])
+    link = ("View or update your booking", manage_url) if manage_url else None
+    text, html = _layout(venue, title, intro, [*blocks, outro], link)
     return Rendered(f"{title} · {venue.name}", text, html)
 
 

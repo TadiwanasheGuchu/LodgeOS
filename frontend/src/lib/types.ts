@@ -402,6 +402,12 @@ export interface ReservationDetail extends ReservationSummary {
   tax_amount: Money;
   notes: string | null;
   cancellation_reason: string | null;
+  hold_expires_at: string | null;
+  guest_arrival_time: string | null;
+  guest_message: string | null;
+  guest_updated_at: string | null;
+  cancellation_requested_at: string | null;
+  cancellation_request_reason: string | null;
   guest: Guest;
   rooms: {
     id: string;
@@ -734,4 +740,24 @@ export interface PublicBooking {
   guest_name: string;
   email: string;
   hold_expires_at: string | null;
+}
+
+export interface PortalBooking {
+  reference: string;
+  status: ReservationStatus;
+  guest_name: string;
+  check_in: string;
+  check_out: string;
+  nights: number;
+  currency: string;
+  total: string;
+  rooms: { room_type: string; rate_plan: string; adults: number; children: number; total: string }[];
+  invoices: { number: string; issue_date: string; total: string; credited: string; paid: string; balance: string }[];
+  paid: string;
+  property: { name: string; address: string[]; phone: string | null; email: string | null; check_in_time: string; check_out_time: string; booking_terms: string | null };
+  arrival_time: string | null;
+  message: string | null;
+  cancellation_requested: boolean;
+  cancellation_reason: string | null;
+  can_update: boolean;
 }

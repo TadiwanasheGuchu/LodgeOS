@@ -77,6 +77,7 @@ The worker needs only `LODGEOS_DATABASE_URL` (the `lodgeos_app` role) and `LODGE
 
 | Variable | Default | Notes |
 |---|---|---|
+| `LODGEOS_PUBLIC_BASE_URL` | `http://localhost:3000` | Public address of the web app; used in guest links in emails |
 | `LODGEOS_EMAIL_PROVIDER` | `mock` | `mock` records messages in Redis (`mock-mailbox`) and sends nothing; the UI labels them "test mode". Production refuses `mock` |
 | `LODGEOS_EMAIL_FROM_ADDRESS` | `bookings@lodgeos.local` | Sender address on a domain with SPF, DKIM and DMARC set up for the provider |
 | `LODGEOS_SMTP_HOST`, `LODGEOS_SMTP_PORT` | `localhost`, `587` | Provider's SMTP submission host |

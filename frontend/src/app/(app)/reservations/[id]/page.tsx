@@ -13,6 +13,8 @@ import { InvoiceStatusChip } from "../../invoices/status";
 import { EmailButton } from "@/components/notifications/email-button";
 import { EmailLog } from "@/components/notifications/email-log";
 import { BookingPayments } from "./booking-payments";
+import { DismissCancellationRequest } from "./cancellation-request";
+import { GuestLink } from "./guest-link";
 import { CreateInvoice } from "./create-invoice";
 import { AssignRoom } from "./assign-room";
 import { ReservationActions } from "./reservation-actions";
@@ -71,6 +73,16 @@ export default async function ReservationPage({ params }: PageProps<"/reservatio
         </div>
         {canManage ? <ReservationActions reservation={r} today={todayIn(property.timezone)} /> : null}
       </div>
+
+      {r.cancellation_requested_at && r.status !== "cancelled" ? (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-warning bg-warning-tint px-4 py-3 text-sm text-charcoal">
+          <span>
+            <span className="font-medium">The guest asked to cancel</span> on {formatDateTime(r.cancellation_requested_at, property.timezone)}: {r.cancellation_request_reason}
+            <span className="block text-[13px]">Apply your booking terms, then cancel the booking or keep it and tell the guest.</span>
+          </span>
+          {canManage ? <DismissCancellationRequest reservationId={r.id} /> : null}
+        </div>
+      ) : null}
 
       {r.status === "cancelled" && r.cancellation_reason ? (
         <p className="rounded-md border border-danger/30 bg-danger-tint px-4 py-3 text-sm text-danger">Cancelled: {r.cancellation_reason}</p>
@@ -139,6 +151,13 @@ export default async function ReservationPage({ params }: PageProps<"/reservatio
             {r.guest.phone ? <p><a href={`tel:${r.guest.phone}`} className="text-teal underline-offset-2 hover:underline">{r.guest.phone}</a></p> : null}
             <p className="mt-2 text-muted">Booked by {BOOKING_SOURCE_LABELS[r.source].toLowerCase()}</p>
             {r.notes ? <p className="mt-2 whitespace-pre-wrap">{r.notes}</p> : null}
+            {r.guest_arrival_time || r.guest_message ? (
+              <div className="mt-3 rounded-md bg-mist px-3 py-2">
+                <p className="text-[12px] font-medium text-forest">From the guest{r.guest_updated_at ? ` · ${formatDateTime(r.guest_updated_at, property.timezone)}` : ""}</p>
+                {r.guest_arrival_time ? <p>Arriving around {r.guest_arrival_time}</p> : null}
+                {r.guest_message ? <p className="whitespace-pre-wrap">{r.guest_message}</p> : null}
+              </div>
+            ) : null}
             {canConfirm ? (
               <div className="mt-3 flex flex-col items-start gap-1">
                 <EmailButton
@@ -150,6 +169,9 @@ export default async function ReservationPage({ params }: PageProps<"/reservatio
               </div>
             ) : null}
             <EmailLog items={emails} timezone={property.timezone} />
+            {canManage && r.status !== "no_show" ? (
+              <GuestLink reservationId={r.id} reference={r.reference} propertyName={property.name} guestPhone={r.guest.phone} />
+            ) : null}
           </section>
 
           {invoices ? (
