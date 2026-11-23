@@ -76,6 +76,9 @@ class Property(TimestampMixin, Base):
     postal_code: Mapped[str | None] = mapped_column(String(20))
     phone: Mapped[str | None] = mapped_column(String(40))
     email: Mapped[str | None] = mapped_column(String(320))
+    # Printed on invoices (ADR-0009). "Tax invoice" is shown only when a tax number is set.
+    legal_name: Mapped[str | None] = mapped_column(String(200))
+    tax_number: Mapped[str | None] = mapped_column(String(50))
     # Local times at the property. Stored as wall-clock time, interpreted in `timezone`.
     check_in_time: Mapped[time] = mapped_column(Time, nullable=False)
     check_out_time: Mapped[time] = mapped_column(Time, nullable=False)

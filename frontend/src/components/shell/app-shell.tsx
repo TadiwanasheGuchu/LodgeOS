@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, BedDouble, Building2, CalendarDays, CalendarRange, History, LayoutGrid, Menu, Settings2, Sparkles, Users, Wrench, X } from "lucide-react";
+import { ArrowLeftRight, BedDouble, Building2, CalendarDays, CalendarRange, History, LayoutGrid, Menu, ReceiptText, Settings2, Sparkles, Users, Wrench, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -22,6 +22,7 @@ const ICONS: Record<NavIcon, typeof LayoutGrid> = {
   calendar: CalendarRange,
   maintenance: Wrench,
   housekeeping: Sparkles,
+  invoices: ReceiptText,
 };
 
 type ActiveMe = Me & { active_organisation: NonNullable<Me["active_organisation"]> };
@@ -75,9 +76,9 @@ export function AppShell({ me, children }: { me: ActiveMe; children: ReactNode }
   );
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[232px_minmax(0,1fr)]">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[232px_minmax(0,1fr)] print:block">
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-dvh flex-col gap-8 bg-forest px-3 py-5 lg:flex">
+      <aside className="print:hidden sticky top-0 hidden h-dvh flex-col gap-8 bg-forest px-3 py-5 lg:flex">
         <Wordmark tone="white" className="px-3 text-xl" />
         <nav aria-label="Main" className="flex-1">
           {navList}
@@ -86,7 +87,7 @@ export function AppShell({ me, children }: { me: ActiveMe; children: ReactNode }
       </aside>
 
       {/* Phone and tablet top bar */}
-      <header className="sticky top-0 z-20 bg-forest lg:hidden">
+      <header className="sticky top-0 z-20 bg-forest print:hidden lg:hidden">
         <div className="flex h-14 items-center justify-between px-4">
           <Wordmark tone="white" className="text-lg" />
           <button
@@ -109,12 +110,12 @@ export function AppShell({ me, children }: { me: ActiveMe; children: ReactNode }
       </header>
 
       <div className="flex min-w-0 flex-col">
-        <div className="hidden h-14 items-center justify-end gap-3 border-b border-line bg-white px-6 lg:flex">
+        <div className="hidden h-14 items-center justify-end print:hidden gap-3 border-b border-line bg-white px-6 lg:flex">
           <span className="text-sm text-muted">{me.user.full_name}</span>
           <SignOutButton variant="ghost" />
         </div>
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
-        <div className="border-t border-line bg-white px-4 py-3 lg:hidden">
+        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 print:p-0">{children}</main>
+        <div className="border-t border-line bg-white px-4 py-3 print:hidden lg:hidden">
           <div className="flex items-center justify-between gap-3">
             <span className="truncate text-sm text-muted">{me.user.full_name}</span>
             <SignOutButton variant="ghost" />

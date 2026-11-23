@@ -29,6 +29,8 @@ class _PropertyFields(BaseModel):
     postal_code: Annotated[str | None, Field(default=None, max_length=20)] = None
     phone: Annotated[str | None, Field(default=None, max_length=40)] = None
     email: EmailStr | None = None
+    legal_name: Annotated[str | None, Field(default=None, max_length=200)] = None
+    tax_number: Annotated[str | None, Field(default=None, max_length=50)] = None
 
 
 class PropertyCreate(_PropertyFields):
@@ -91,6 +93,8 @@ class PropertyOut(BaseModel):
     postal_code: str | None
     phone: str | None
     email: str | None
+    legal_name: str | None
+    tax_number: str | None
     check_in_time: time
     check_out_time: time
     weekend_nights: list[int]

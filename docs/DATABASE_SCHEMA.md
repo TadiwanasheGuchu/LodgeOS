@@ -184,6 +184,20 @@ Both use tenant RLS; the app role cannot delete from either.
 |---|---|---|
 | `housekeeping_tasks` | `property_id`, `room_id` (composite FK), `task_date`, `kind` (departure, stayover, arrival, vacant), `status` (pending, in_progress, done, declined), `assigned_to`, `note`, `started_at`, `completed_at`, `completed_by` | Tenant RLS. UNIQUE `(room_id, task_date)`; CHECK `completed_at` set exactly when done or declined; declined needs a note. Written only when someone acts on a room; the list itself is derived from bookings |
 
+## Tables (Phase 3.3)
+
+All use tenant RLS (ADR-0009). Amounts are NUMERIC(12,2); every line and document satisfies net + tax = total (CHECK).
+
+| Table | Key columns | Notes |
+|---|---|---|
+| `document_sequences` | PK (`organisation_id`, `kind`), `next_number` | Gapless numbering; row locked while issuing |
+| `invoices` | `property_id`, `reservation_id` (composite FK), `guest_id`, `number` (UNIQUE per organisation), `status` (draft, issued, discarded), `currency`, `issue_date`, `due_date`, `bill_to_name`, `bill_to_details`, `notes`, `net_total`, `tax_total`, `total`, `issued_at`, `issued_by`, `created_by` | CHECK: issued ⇔ number, issue date and issued_at set. Trigger `invoices_guard`: rows that are not drafts cannot be updated. No DELETE for the app role |
+| `invoice_items` | `invoice_id` (composite FK with organisation), `position`, `kind` (accommodation, extra), `description`, `quantity`, `unit_amount`, `prices_include_tax`, `net_amount`, `tax_amount`, `total_amount`, `taxes` (JSONB), `reservation_room_id`, `service_from`, `service_to` | Trigger `invoice_items_guard`: insert, update and delete only while the invoice is a draft |
+| `credit_notes` | `invoice_id`, `number` (UNIQUE per organisation), `reason`, `issue_date`, `currency`, `net_total`, `tax_total`, `total` (> 0), `issued_at`, `issued_by` | INSERT and SELECT only |
+| `credit_note_items` | `credit_note_id`, `invoice_item_id`, `description`, amounts, `taxes` (JSONB) | INSERT and SELECT only; total > 0 |
+
+`properties` gained `legal_name` and `tax_number`. Permissions `invoices.view`, `invoices.manage`, `invoices.credit` were added to the catalogue and granted to existing system roles.
+
 ## Planned tables
 
-Next: `invoices`, `invoice_items`, `credit_notes` (3.3), `payments`, `payment_allocations`, `refunds` (3.4), `notifications` (3.5).
+Next: `payments`, `payment_allocations`, `refunds` (3.4), `notifications` (3.5).

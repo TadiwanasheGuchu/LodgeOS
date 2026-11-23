@@ -39,6 +39,10 @@ const LABELS: Record<string, string> = {
   "housekeeping.done": "Finished cleaning a room",
   "housekeeping.decline": "Recorded service declined",
   "housekeeping.reopen": "Sent a room back for cleaning",
+  "invoice.drafted": "Started an invoice",
+  "invoice.issued": "Issued an invoice",
+  "invoice.discarded": "Discarded a draft invoice",
+  "invoice.credited": "Issued a credit note",
   "maintenance.reported": "Reported a maintenance problem",
   "maintenance.updated": "Updated a maintenance ticket",
   "maintenance.room_blocked": "Took a room out of sale",
@@ -99,6 +103,12 @@ export function describeChanges(entry: AuditLogEntry): string[] {
   }
   if (entry.action.startsWith("housekeeping.") && d.room) {
     return [`Room ${String(d.room)}, ${String(d.date)}`];
+  }
+  if (entry.action === "invoice.credited") {
+    return [`${String(d.number)} against ${String(d.invoice)}: ${String(d.total)}`];
+  }
+  if (entry.action.startsWith("invoice.") && d.bill_to) {
+    return [d.number ? `${String(d.number)} to ${String(d.bill_to)}: ${String(d.total)}` : `For ${String(d.bill_to)}`];
   }
   if (entry.action === "maintenance.reported" && d.title) {
     return [String(d.title)];

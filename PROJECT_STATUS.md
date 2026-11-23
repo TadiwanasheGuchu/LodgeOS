@@ -3,7 +3,7 @@
 _Last updated: 2026-11-23_
 
 **Current phase:** 3 — Operations and finance
-**Current milestone:** 3.2 complete (housekeeping)
+**Current milestone:** 3.3 complete (invoices and credit notes)
 
 ## Phase 3 plan
 
@@ -11,9 +11,28 @@ _Last updated: 2026-11-23_
 |---|---|---|
 | 3.1 | Maintenance tickets (report, assign, work, resolve), dated room blocks that take a room out of sale and count against availability | ✅ Done |
 | 3.2 | Housekeeping task lists per day (departures, stay-overs, arrivals), assignment, mobile-first | ✅ Done |
-| 3.3 | Invoices from reservations (price snapshot), posting, credit notes | Planned |
+| 3.3 | Invoices from reservations (price snapshot), extras, issuing with gapless numbers, credit notes, printable invoice | ✅ Done |
 | 3.4 | Payments, allocations, refunds, reconciliation | Planned |
 | 3.5 | Notifications (email adapter, mock environment first) | Planned |
+
+## Phase 3.3 acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| An invoice for a booking equals the booking exactly (lines copied from the price snapshot: net, each tax, total) | ✅ Tested |
+| A booked room can be on only one live invoice; discarding the draft or fully crediting the line frees it | ✅ Tested |
+| Extra lines use the ADR-0007 rounding rule with the property's chosen taxes, inclusive or exclusive | ✅ Tested |
+| Numbers are gapless per organisation, assigned only on issue; concurrent issues get distinct consecutive numbers | ✅ Tested (fails with the lock removed) |
+| Issued invoices cannot be changed through the API or directly in the database (triggers, no DELETE) | ✅ Tested |
+| Credit notes split tax by the line's rates, never exceed the remainder, and a full remainder nets every component to zero | ✅ Tested |
+| Front desk invoices; only owners, managers and accountants credit; housekeeping sees no invoices; other tenants get 404 | ✅ Tested |
+| Printable invoice ("Tax invoice" when the property has a tax number), screen and print layouts checked | ✅ Tested (E2E: book → invoice → extra → issue → credit) |
+
+## Test results (milestone 3.3)
+
+- Backend: **139 passed, 0 failed** (7 new). Lint, types, migration round trip clean.
+- Frontend unit and component: **17 passed**. End-to-end: **30 passed** (new: invoice a stay with an extra, issue, credit the extra as owner).
+- Not yet done: payments and balances (3.4), emailing invoices (3.5), multi-currency invoices with exchange rates, deposits invoiced before arrival.
 
 ## Phase 3.2 acceptance criteria
 
@@ -193,5 +212,5 @@ See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no password reset, no
 
 ## Next
 
-1. Milestone 3.3: invoices.
-2. Milestones 3.4–3.5: invoices, payments, refunds, reconciliation, notifications.
+1. Milestone 3.4: payments, allocations, refunds, reconciliation.
+2. Milestone 3.5: invoices, payments, refunds, reconciliation, notifications.

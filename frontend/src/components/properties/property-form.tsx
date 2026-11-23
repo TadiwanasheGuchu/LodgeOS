@@ -29,6 +29,8 @@ const schema = z.object({
   postal_code: optional(20),
   phone: optional(40),
   email: z.union([z.literal(""), z.string().trim().email("Enter a valid email address.")]),
+  legal_name: optional(200),
+  tax_number: optional(50),
   weekend_nights: z.array(z.string()),
 });
 type Values = z.infer<typeof schema>;
@@ -43,7 +45,7 @@ const WEEKDAYS: [number, string][] = [
   [7, "Sun"],
 ];
 
-const TEXT_FIELDS = ["address_line1", "address_line2", "city", "region", "postal_code", "phone", "email"] as const;
+const TEXT_FIELDS = ["address_line1", "address_line2", "city", "region", "postal_code", "phone", "email", "legal_name", "tax_number"] as const;
 
 function toValues(p: Partial<Property>, defaults: { timezone: string; currency: string; country: string | null }): Values {
   return {
@@ -61,6 +63,8 @@ function toValues(p: Partial<Property>, defaults: { timezone: string; currency: 
     postal_code: p.postal_code ?? "",
     phone: p.phone ?? "",
     email: p.email ?? "",
+    legal_name: p.legal_name ?? "",
+    tax_number: p.tax_number ?? "",
     weekend_nights: (p.weekend_nights ?? [5, 6]).map(String),
   };
 }
@@ -217,6 +221,17 @@ export function PropertyForm({
             <Input type="email" {...describedBy("email", err("email"))} {...register("email")} />
           </Field>
         </div>
+      </fieldset>
+
+      <fieldset className="grid gap-5 border-t border-line pt-5 sm:grid-cols-2">
+        <legend className="sr-only">Invoicing</legend>
+        <p className="text-sm font-semibold text-forest sm:col-span-2">Invoicing</p>
+        <Field id="legal_name" label="Registered business name" hint="Printed on invoices. Leave empty to use the property name." error={err("legal_name")}>
+          <Input autoComplete="organization" {...describedBy("legal_name", err("legal_name"))} {...register("legal_name")} />
+        </Field>
+        <Field id="tax_number" label="Tax registration number" hint="With a number, invoices are titled “Tax invoice”." error={err("tax_number")}>
+          <Input className="font-mono" {...describedBy("tax_number", err("tax_number"))} {...register("tax_number")} />
+        </Field>
       </fieldset>
 
       <div className="flex items-center gap-3 border-t border-line pt-5">

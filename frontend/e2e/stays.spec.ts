@@ -84,3 +84,54 @@ test("arrival today: check in, check out, room goes to housekeeping", async ({ p
   if (await switcher.count()) await switcher.click();
   await expect(page.getByRole("group", { name: "Room 6 cleaning status" }).getByRole("button", { name: "Dirty" })).toHaveAttribute("aria-pressed", "true");
 });
+
+test("invoice a stay with an extra, issue it, then credit the extra", async ({ page }) => {
+  await signedIn(page, seed.receptionist);
+  await page.goto("/reservations");
+  await page.getByRole("navigation", { name: "Property" }).getByRole("link", { name: propertyName }).click();
+  await expect(page.getByText(new RegExp(`^${propertyName} · stays from`))).toBeVisible();
+  await page.getByRole("link", { name: "New booking" }).click();
+  await expect(page.getByText(propertyName, { exact: true })).toBeVisible();
+  await page.getByLabel("Arrival").fill("2027-05-20");
+  await page.getByLabel("Departure").fill("2027-05-22");
+  await page.getByRole("button", { name: "Add a Chalet" }).click();
+  await page.getByLabel("First name").fill("Tuyeni");
+  await page.getByLabel("Last name").fill(`Amupolo ${seed.run}`);
+  await page.getByRole("button", { name: /^Book/ }).click();
+  await expect(page.getByRole("heading", { name: /^LOS-/ })).toBeVisible();
+  await expect(page.getByText("Not invoiced yet.")).toBeVisible();
+
+  await page.getByRole("button", { name: "Create invoice" }).click();
+  const doc = page.getByRole("article", { name: /invoice/i });
+  await expect(doc.getByRole("heading", { name: "Draft invoice" })).toBeVisible();
+  await expect(doc).toContainText(`Tuyeni Amupolo ${seed.run}`);
+  await expect(doc).toContainText("Chalet · Bed and breakfast · 20 May to 22 May 2027 (2 nights)");
+
+  await page.getByRole("button", { name: "Add a line" }).click();
+  await page.getByLabel("Description").fill("Dinner, 2 guests");
+  await page.getByLabel("Quantity").fill("2");
+  await page.getByLabel(/^Price each/).fill("150");
+  await page.getByRole("button", { name: "Add line" }).click();
+  await expect(doc).toContainText("Dinner, 2 guests");
+
+  await page.getByRole("button", { name: "Issue invoice" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Issue invoice" }).click();
+  await expect(doc.getByText(/^INV-\d{6}$/)).toBeVisible();
+  const invoiceUrl = page.url();
+  // Front desk cannot credit; it is shown how mistakes are corrected.
+  await expect(page.getByRole("button", { name: "Credit note" })).toHaveCount(0);
+  await expect(page.getByText("Mistakes are corrected with a credit note by a manager or accountant.")).toBeVisible();
+
+  await page.context().clearCookies();
+  await signedIn(page, seed.owner);
+  await page.goto(invoiceUrl);
+  await page.getByRole("button", { name: "Credit note" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: /^Credit all NAD 300\.00/ }).click();
+  await dialog.getByLabel("Reason").fill("Dinner was complimentary");
+  await dialog.getByRole("button", { name: "Issue credit note" }).click();
+  const notes = page.getByRole("region", { name: "Credit notes" });
+  await expect(notes).toContainText(/CN-\d{6}/);
+  await expect(notes).toContainText("Dinner was complimentary");
+  await expect(doc).toContainText("Still owed");
+});

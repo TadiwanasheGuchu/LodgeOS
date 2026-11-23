@@ -141,9 +141,28 @@ Status flow: provisional → confirmed → checked in → checked out; provision
 | GET | `/api/v1/properties/{id}/housekeeping?date` | `rooms.view` | Every active room with what it needs that day (`departure`, `stayover`, `arrival`, `vacant` or null), whether a guest is leaving, has left, is staying or arriving, the head count (no names), the day's task, and who can be assigned. Defaults to today in the property's timezone |
 | POST | `/api/v1/properties/{id}/housekeeping/{date}/rooms/{room_id}` | `rooms.housekeeping_update` | `{action: assign\|start\|done\|decline\|reopen, assigned_to?, note?}`. Assign for today or later; other actions today only. `done` marks a dirty room clean; `reopen` marks it dirty; `decline` only for stay-overs, with a note. 409 while a departing guest is still checked in. Returns the updated day |
 
+## Endpoints (Phase 3.3)
+
+Invoices and credit notes follow ADR-0009. Amounts are decimal strings.
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| GET | `/api/v1/properties/{id}/invoices?status&reservation_id&limit&offset` | `invoices.view` | Issued and draft invoices (discarded only with `status=discarded`), with credited totals |
+| POST | `/api/v1/properties/{id}/invoices` | `invoices.manage` | Draft: `{reservation_id?, bill_to_name?, bill_to_details?, notes?}`. With a booking, its rooms not already on a live invoice become lines copied from the price snapshot; bill-to defaults to the guest. 409 when every room is already invoiced |
+| GET | `/api/v1/invoices/{id}` | `invoices.view` | Invoice with seller details, lines (with credited amounts), tax summary and credit notes |
+| PATCH | `/api/v1/invoices/{id}` | `invoices.manage` | Drafts only: bill-to, notes, due date. 409 once issued |
+| POST | `/api/v1/invoices/{id}/items` | `invoices.manage` | Drafts only: extra line `{description, quantity, unit_amount, prices_include_tax, tax_ids}` computed with the ADR-0007 rule |
+| DELETE | `/api/v1/invoices/{id}/items/{item_id}` | `invoices.manage` | Drafts only |
+| POST | `/api/v1/invoices/{id}/reservation-rooms?reservation_id` | `invoices.manage` | Drafts only: add another booking's uninvoiced rooms (same currency) |
+| POST | `/api/v1/invoices/{id}/issue` | `invoices.manage` | Assigns the next gapless number and the issue date (property timezone); the invoice is then immutable |
+| POST | `/api/v1/invoices/{id}/discard` | `invoices.manage` | Drafts only; kept for the record, frees its booked rooms |
+| POST | `/api/v1/invoices/{id}/credit-notes` | `invoices.credit` | `{reason, lines: [{invoice_item_id, amount?}]}` on an issued invoice; no amount credits the line's remainder exactly. 422 above the remainder |
+
+`PATCH /api/v1/properties/{id}` also accepts `legal_name` and `tax_number`, printed on invoices.
+
 ## Role permissions
 
-Defaults of the six system roles (organisation-wide grants). A role granted for one property applies its `properties.*` and `rooms.*` permissions to that property only.
+Defaults of the six system roles (organisation-wide grants). A role granted for one property applies its `properties.*`, `rooms.*`, `rates.*`, `reservations.*` and `invoices.*` permissions to that property only.
 
 | Permission | owner | manager | receptionist | housekeeping | maintenance | accountant |
 |---|---|---|---|---|---|---|
@@ -162,3 +181,6 @@ Defaults of the six system roles (organisation-wide grants). A role granted for 
 | rates.manage | ✓ | ✓ | | | | |
 | reservations.view | ✓ | ✓ | ✓ | | | ✓ |
 | reservations.manage | ✓ | ✓ | ✓ | | | |
+| invoices.view | ✓ | ✓ | ✓ | | | ✓ |
+| invoices.manage | ✓ | ✓ | ✓ | | | ✓ |
+| invoices.credit | ✓ | ✓ | | | | ✓ |
