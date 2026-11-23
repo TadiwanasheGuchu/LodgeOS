@@ -4,12 +4,19 @@ import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { apiGet, requireOrganisation } from "@/lib/server/api";
 import { accessOf } from "@/lib/access";
-import type { Organisation, Permission } from "@/lib/types";
+import type { Organisation, Permission, PropertySummary, TodayData } from "@/lib/types";
 import { PropertyClock } from "./property-clock";
+import { TodayPanel } from "./today-panel";
 
 export const metadata: Metadata = { title: "Overview" };
 
 const links: { href: string; title: string; text: string; permission?: Permission }[] = [
+  {
+    href: "/calendar",
+    title: "Calendar",
+    text: "Every room by date, and bookings that still need a room.",
+    permission: "reservations.view",
+  },
   {
     href: "/rooms",
     title: "Room status",
@@ -39,11 +46,27 @@ const links: { href: string; title: string; text: string; permission?: Permissio
 export default async function OverviewPage() {
   const me = await requireOrganisation();
   const org = await apiGet<Organisation>("/api/v1/organisation");
+  const access = accessOf(me);
+  // Front-desk view: today's movements for up to three properties the person can see.
+  const frontDesk = access.canAnywhere("reservations.view")
+    ? (await apiGet<PropertySummary[]>("/api/v1/properties")).filter((p) => access.canAt("reservations.view", p.id)).slice(0, 3)
+    : [];
+  const today = await Promise.all(
+    frontDesk.map(async (p) => ({ property: p, data: await apiGet<TodayData>(`/api/v1/properties/${p.id}/today`) })),
+  );
   const firstName = me.user.full_name.split(" ")[0];
 
   return (
     <>
       <PageHeader title={`Hello, ${firstName}`} description={`${org.name} · ${me.active_organisation.role_label}`} />
+
+      {today.length ? (
+        <div className="mb-6 flex flex-col gap-6">
+          {today.map(({ property, data }) => (
+            <TodayPanel key={property.id} propertyName={property.name} data={data} />
+          ))}
+        </div>
+      ) : null}
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <section aria-labelledby="setup-heading" className="rounded-lg border border-line bg-white">
@@ -66,8 +89,7 @@ export default async function OverviewPage() {
               ))}
           </ul>
           <p className="border-t border-line bg-cloud px-5 py-3 text-[13px] text-muted">
-            Reservations and the booking calendar are being built next. This page will show today&apos;s arrivals and
-            departures once they are available.
+            Check-in and check-out, invoices and payments are being built next.
           </p>
         </section>
 

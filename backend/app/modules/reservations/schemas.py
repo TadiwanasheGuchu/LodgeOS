@@ -127,3 +127,56 @@ class RoomTypeAvailability(BaseModel):
     max_occupancy: int
     free: int  # the minimum over the nights: how many can be booked for the whole stay
     nights: list[NightOut]
+
+
+class AssignRoom(_In):
+    # null removes the allocation (the booking keeps its room type).
+    room_id: uuid.UUID | None
+
+
+class FreeRoom(BaseModel):
+    id: uuid.UUID
+    number: str
+    building_name: str | None
+    floor: str | None
+    housekeeping_status: str
+    maintenance_status: str
+
+
+class CalendarStay(BaseModel):
+    reservation_room_id: uuid.UUID
+    reservation_id: uuid.UUID
+    reference: str
+    status: str
+    guest_name: str
+    room_type_id: uuid.UUID
+    room_id: uuid.UUID | None
+    check_in: date
+    check_out: date
+    adults: int
+    children: int
+
+
+class CalendarRoom(BaseModel):
+    id: uuid.UUID
+    number: str
+    room_type_id: uuid.UUID
+    room_type_code: str
+    building_name: str | None
+    housekeeping_status: str
+    maintenance_status: str
+
+
+class CalendarOut(BaseModel):
+    start: date
+    days: int
+    rooms: list[CalendarRoom]
+    stays: list[CalendarStay]
+
+
+class TodayOut(BaseModel):
+    date: date
+    arrivals: list[ReservationSummary]
+    departures: list[ReservationSummary]
+    in_house: int
+    unassigned_arrivals: int

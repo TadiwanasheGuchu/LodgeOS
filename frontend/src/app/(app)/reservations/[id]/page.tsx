@@ -9,6 +9,7 @@ import { formatMoney, formatPercent } from "@/lib/money";
 import { apiGet, requireOrganisation, ServerApiError } from "@/lib/server/api";
 import { loadProperty } from "@/lib/server/properties";
 import { BOOKING_SOURCE_LABELS, RESERVATION_STATUS_LABELS, type ReservationDetail } from "@/lib/types";
+import { AssignRoom } from "./assign-room";
 import { ReservationActions } from "./reservation-actions";
 
 export const metadata: Metadata = { title: "Reservation" };
@@ -62,6 +63,9 @@ export default async function ReservationPage({ params }: PageProps<"/reservatio
                     {room.room_type_name}
                     <span className="ml-2 font-normal text-muted">{room.room_number ? `Room ${room.room_number}` : "Room not assigned yet"}</span>
                   </p>
+                  {canManage && ["provisional", "confirmed", "checked_in"].includes(r.status) ? (
+                    <AssignRoom reservationRoomId={room.id} roomNumber={room.room_number} label={room.room_type_name} />
+                  ) : null}
                   <p className="text-muted">
                     {room.price_snapshot.rate_plan} · {room.adults} {room.adults === 1 ? "adult" : "adults"}
                     {room.children ? `, ${room.children} ${room.children === 1 ? "child" : "children"}` : ""}

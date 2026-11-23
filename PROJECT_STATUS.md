@@ -3,15 +3,31 @@
 _Last updated: 2026-11-16_
 
 **Current phase:** 2 — Reservations
-**Current milestone:** 2.1 complete; next is 2.2 (booking calendar)
+**Current milestone:** 2.2 complete; next is 2.3 (check-in, check-out, booking changes)
 
 ## Phase 2 plan
 
 | Milestone | Scope | Status |
 |---|---|---|
 | 2.1 | Guests, reservation engine (availability, concurrency-safe booking, price snapshot, references, status history), booking form, list, detail, confirm and cancel | ✅ Done |
-| 2.2 | Booking calendar (rooms by date), room allocation and moves, arrivals and departures on the overview | ⏳ Next |
-| 2.3 | Check-in and check-out (with housekeeping hand-off), booking changes (dates, rooms, guests) through the same inventory lock, no-shows | Not started |
+| 2.2 | Booking calendar (rooms by date), room allocation and moves, arrivals and departures on the overview | ✅ Done |
+| 2.3 | Check-in and check-out (with housekeeping hand-off), booking changes (dates, rooms, guests) through the same inventory lock, no-shows | ⏳ Next |
+
+## Phase 2.2 acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| Only rooms free for every night of a stay are offered; a taken room is refused even if requested directly | ✅ Tested (API and database constraint) |
+| Moves stay within the booked room type; out-of-order rooms refused; cancelled bookings cannot be assigned | ✅ Tested |
+| Calendar shows active stays only, in their room's row, with unassigned bookings per room type | ✅ Tested (API and E2E) |
+| Today's arrivals and departures use the property's own date | ✅ Tested |
+| Housekeeping cannot see the calendar; accountants can view but not assign | ✅ Tested |
+
+## Test results (milestone 2.2)
+
+- Backend: **112 passed, 0 failed**. Lint, types, migration check clean.
+- Frontend unit and component: **17 passed**. End-to-end: **26 passed**.
+- Merged into `main` on 17 November: PRs #3, #4 and #5, each with all CI checks green.
 
 ## Phase 2.1 acceptance criteria
 

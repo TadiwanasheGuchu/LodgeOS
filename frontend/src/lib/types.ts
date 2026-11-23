@@ -418,3 +418,41 @@ export interface RoomTypeAvailability {
   free: number;
   nights: { night: string; sellable: number; booked: number; free: number }[];
 }
+
+export interface CalendarStay {
+  reservation_room_id: string;
+  reservation_id: string;
+  reference: string;
+  status: ReservationStatus;
+  guest_name: string;
+  room_type_id: string;
+  room_id: string | null;
+  check_in: string;
+  check_out: string;
+  adults: number;
+  children: number;
+}
+
+export interface CalendarData {
+  start: string;
+  days: number;
+  rooms: { id: string; number: string; room_type_id: string; room_type_code: string; building_name: string | null; housekeeping_status: HousekeepingStatus; maintenance_status: MaintenanceStatus }[];
+  stays: CalendarStay[];
+}
+
+export interface TodayData {
+  date: string;
+  arrivals: ReservationSummary[];
+  departures: ReservationSummary[];
+  in_house: number;
+  unassigned_arrivals: number;
+}
+
+export interface FreeRoom {
+  id: string;
+  number: string;
+  building_name: string | null;
+  floor: string | null;
+  housekeeping_status: HousekeepingStatus;
+  maintenance_status: MaintenanceStatus;
+}

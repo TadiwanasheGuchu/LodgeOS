@@ -323,3 +323,55 @@ async def change_status(
 def overlaps(check_in: date, check_out: date) -> ColumnElement[bool]:
     """Filter for reservations whose stay overlaps [check_in, check_out)."""
     return and_(Reservation.check_in < check_out, Reservation.check_out > check_in)
+
+
+ASSIGNABLE = (
+    ReservationStatus.PROVISIONAL,
+    ReservationStatus.CONFIRMED,
+    ReservationStatus.CHECKED_IN,
+)
+
+
+async def free_rooms(db: AsyncSession, rr: ReservationRoom) -> list[Room]:
+    """Rooms of the booked type with no other active stay overlapping this one."""
+    clash = (
+        select(ReservationRoom.room_id)
+        .where(
+            ReservationRoom.room_id.is_not(None),
+            ReservationRoom.id != rr.id,
+            ReservationRoom.status.in_(ASSIGNABLE),
+            ReservationRoom.check_in < rr.check_out,
+            ReservationRoom.check_out > rr.check_in,
+        )
+        .scalar_subquery()
+    )
+    rows = await db.scalars(
+        select(Room)
+        .where(
+            Room.room_type_id == rr.room_type_id,
+            Room.status == RecordStatus.ACTIVE,
+            Room.maintenance_status != MaintenanceStatus.OUT_OF_ORDER,
+            Room.id.not_in(clash),
+        )
+        .order_by(func.length(Room.number), Room.number)
+    )
+    return list(rows.all())
+
+
+async def assign_room(db: AsyncSession, rr: ReservationRoom, room_id: uuid.UUID | None) -> None:
+    """Allocate, move or unassign a physical room. Moves stay within the booked room type,
+    so inventory and price are unchanged; the exclusion constraint is the final guard."""
+    if rr.status not in ASSIGNABLE:
+        raise BookingError("Rooms can only be assigned to active bookings.")
+    if room_id is not None:
+        room = await db.get(Room, room_id)
+        if room is None or room.property_id != rr.property_id:
+            raise BookingError("Choose a room of this property.", 422)
+        if room.room_type_id != rr.room_type_id:
+            raise BookingError("Choose a room of the booked room type.", 422)
+        if room.status != RecordStatus.ACTIVE:
+            raise BookingError(f"Room {room.number} is archived.", 422)
+        if room.maintenance_status == MaintenanceStatus.OUT_OF_ORDER:
+            raise BookingError(f"Room {room.number} is out of order.")
+    rr.room_id = room_id
+    await db.flush()
