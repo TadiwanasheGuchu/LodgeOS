@@ -32,6 +32,26 @@ def cents(value: Decimal) -> Decimal:
     return value.quantize(CENT, rounding=ROUND_HALF_UP)
 
 
+def split_taxes(
+    amount: Decimal, taxes: Sequence["TaxRate"], *, include_tax: bool
+) -> tuple[Decimal, list["TaxAmount"], Decimal]:
+    """Net, each tax and gross for an amount (ADR-0007).
+
+    Each tax is its rate applied to the net, rounded on its own. When ``amount`` includes
+    tax the net is total minus the taxes, so any rounding cent sits in the net.
+    """
+    amount = cents(amount)
+    rate_sum = sum((t.rate_percent for t in taxes), Decimal(0))
+    taxable = amount / (1 + rate_sum / HUNDRED) if include_tax else amount
+    tax_amounts = [
+        TaxAmount(t.name, t.rate_percent, cents(taxable * t.rate_percent / HUNDRED)) for t in taxes
+    ]
+    tax_total = sum((t.amount for t in tax_amounts), Decimal("0.00"))
+    if include_tax:
+        return amount - tax_total, tax_amounts, amount
+    return amount, tax_amounts, amount + tax_total
+
+
 @dataclass(frozen=True)
 class Prices:
     base_price: Decimal
@@ -192,16 +212,8 @@ def quote(
         )
 
     total = cents(sum((n.amount for n in nights), Decimal(0)))
-    rate_sum = sum((t.rate_percent for t in taxes), Decimal(0))
-    taxable = total / (1 + rate_sum / HUNDRED) if rules.prices_include_tax else total
-    tax_amounts = [
-        TaxAmount(t.name, t.rate_percent, cents(taxable * t.rate_percent / HUNDRED)) for t in taxes
-    ]
-    tax_total = sum((t.amount for t in tax_amounts), Decimal("0.00"))
-    if rules.prices_include_tax:
-        net, gross = total - tax_total, total
-    else:
-        net, gross = total, total + tax_total
+    net, tax_amounts, gross = split_taxes(total, taxes, include_tax=rules.prices_include_tax)
+    tax_total = gross - net
 
     return Quote(
         currency=rules.currency,

@@ -8,7 +8,9 @@ import { formatDateTime } from "@/lib/format";
 import { formatMoney, formatPercent } from "@/lib/money";
 import { apiGet, requireOrganisation, ServerApiError } from "@/lib/server/api";
 import { loadProperty } from "@/lib/server/properties";
-import { BOOKING_SOURCE_LABELS, RESERVATION_STATUS_LABELS, type ReservationDetail } from "@/lib/types";
+import { BOOKING_SOURCE_LABELS, RESERVATION_STATUS_LABELS, type InvoiceSummary, type ReservationDetail } from "@/lib/types";
+import { InvoiceStatusChip } from "../../invoices/status";
+import { CreateInvoice } from "./create-invoice";
 import { AssignRoom } from "./assign-room";
 import { ReservationActions } from "./reservation-actions";
 
@@ -25,7 +27,12 @@ export default async function ReservationPage({ params }: PageProps<"/reservatio
     throw err;
   }
   const property = await loadProperty(r.property_id);
-  const canManage = accessOf(me).canAt("reservations.manage", r.property_id);
+  const access = accessOf(me);
+  const canManage = access.canAt("reservations.manage", r.property_id);
+  const canInvoice = access.canAt("invoices.manage", r.property_id);
+  const invoices = access.canAt("invoices.view", r.property_id)
+    ? await apiGet<InvoiceSummary[]>(`/api/v1/properties/${r.property_id}/invoices?reservation_id=${r.id}`)
+    : null;
   const long = { weekday: "short", day: "numeric", month: "short", year: "numeric" } as const;
 
   return (
@@ -114,6 +121,26 @@ export default async function ReservationPage({ params }: PageProps<"/reservatio
             <p className="mt-2 text-muted">Booked by {BOOKING_SOURCE_LABELS[r.source].toLowerCase()}</p>
             {r.notes ? <p className="mt-2 whitespace-pre-wrap">{r.notes}</p> : null}
           </section>
+
+          {invoices ? (
+            <section aria-labelledby="invoices-heading" className="rounded-lg border border-line bg-white px-5 py-4 text-sm">
+              <h2 id="invoices-heading" className="text-sm font-semibold text-forest">Invoices</h2>
+              {invoices.length > 0 ? (
+                <ul className="mt-2 flex flex-col gap-2">
+                  {invoices.map((inv) => (
+                    <li key={inv.id} className="flex items-center justify-between gap-2">
+                      <Link href={`/invoices/${inv.id}`} className="font-mono text-forest underline-offset-2 hover:underline">{inv.number ?? "Draft"}</Link>
+                      <span className="font-mono tabular">{formatMoney(inv.total, inv.currency)}</span>
+                      <InvoiceStatusChip status={inv.status} />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-muted">Not invoiced yet.</p>
+              )}
+              {canInvoice && r.status !== "cancelled" && r.status !== "no_show" ? <CreateInvoice reservationId={r.id} propertyId={r.property_id} /> : null}
+            </section>
+          ) : null}
 
           <section aria-labelledby="history-heading" className="rounded-lg border border-line bg-white px-5 py-4 text-sm">
             <h2 id="history-heading" className="text-sm font-semibold text-forest">History</h2>

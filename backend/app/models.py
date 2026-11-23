@@ -11,6 +11,13 @@ from app.modules.audit.models import AuditLog
 from app.modules.auth.models import User, UserSession
 from app.modules.guests.models import Guest
 from app.modules.housekeeping.models import HousekeepingTask
+from app.modules.invoicing.models import (
+    CreditNote,
+    CreditNoteItem,
+    DocumentSequence,
+    Invoice,
+    InvoiceItem,
+)
 from app.modules.maintenance.models import MaintenanceTicket, RoomBlock
 from app.modules.organisations.models import Organisation, OrganisationUser
 from app.modules.properties.models import Building, Property
@@ -21,9 +28,14 @@ from app.modules.rooms.models import Room, RoomType
 __all__ = [
     "AuditLog",
     "Building",
+    "CreditNote",
+    "CreditNoteItem",
+    "DocumentSequence",
     "Guest",
     "HousekeepingTask",
     "Invitation",
+    "Invoice",
+    "InvoiceItem",
     "MaintenanceTicket",
     "Organisation",
     "OrganisationUser",

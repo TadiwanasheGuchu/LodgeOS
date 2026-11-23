@@ -15,7 +15,10 @@ export type Permission =
   | "rates.view"
   | "rates.manage"
   | "reservations.view"
-  | "reservations.manage";
+  | "reservations.manage"
+  | "invoices.view"
+  | "invoices.manage"
+  | "invoices.credit";
 
 export type Role =
   | "owner"
@@ -175,6 +178,8 @@ export interface Property {
   postal_code: string | null;
   phone: string | null;
   email: string | null;
+  legal_name: string | null;
+  tax_number: string | null;
   check_in_time: string;
   check_out_time: string;
   /** ISO weekdays (1 = Monday) of nights that use weekend prices. */
@@ -520,4 +525,71 @@ export interface HousekeepingBoard {
   today: string;
   rooms: HousekeepingRoom[];
   assignees: { user_id: string; name: string }[];
+}
+
+export interface TaxLine {
+  name: string;
+  rate_percent: string;
+  amount: string;
+}
+
+export interface InvoiceItem {
+  id: string;
+  position: number;
+  kind: "accommodation" | "extra";
+  description: string;
+  quantity: string;
+  unit_amount: string;
+  prices_include_tax: boolean;
+  net_amount: string;
+  tax_amount: string;
+  total_amount: string;
+  taxes: TaxLine[];
+  reservation_room_id: string | null;
+  service_from: string | null;
+  service_to: string | null;
+  credited_amount: string;
+}
+
+export interface CreditNote {
+  id: string;
+  invoice_id: string;
+  invoice_number: string;
+  number: string;
+  reason: string;
+  issue_date: string;
+  currency: string;
+  net_total: string;
+  tax_total: string;
+  total: string;
+  issued_by_name: string;
+  items: { invoice_item_id: string; description: string; net_amount: string; tax_amount: string; total_amount: string; taxes: TaxLine[] }[];
+}
+
+export interface InvoiceSummary {
+  id: string;
+  property_id: string;
+  number: string | null;
+  status: "draft" | "issued" | "discarded";
+  bill_to_name: string;
+  reservation_id: string | null;
+  reservation_reference: string | null;
+  currency: string;
+  issue_date: string | null;
+  due_date: string | null;
+  total: string;
+  credited: string;
+  created_at: string;
+}
+
+export interface Invoice extends InvoiceSummary {
+  bill_to_details: string | null;
+  notes: string | null;
+  net_total: string;
+  tax_total: string;
+  tax_summary: TaxLine[];
+  issued_by_name: string | null;
+  seller: { name: string; legal_name: string | null; tax_number: string | null; address: string[]; phone: string | null; email: string | null };
+  items: InvoiceItem[];
+  credit_notes: CreditNote[];
 }

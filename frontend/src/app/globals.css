@@ -57,3 +57,13 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+@media print {
+  body {
+    background-color: #ffffff;
+  }
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+}
