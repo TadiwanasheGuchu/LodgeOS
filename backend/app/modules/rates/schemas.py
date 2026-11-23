@@ -60,6 +60,7 @@ class RatePlanCreate(_PlanFields):
     kind: RatePlanKind = RatePlanKind.STANDARD
     meal_plan: MealPlan = MealPlan.ROOM_ONLY
     prices_include_tax: bool = True
+    sell_online: bool = False
     min_stay_nights: int = Field(default=1, ge=1, le=365)
     sort_order: int = Field(default=0, ge=0, le=10_000)
 
@@ -70,6 +71,7 @@ class RatePlanUpdate(_PlanFields):
     kind: RatePlanKind | None = None
     meal_plan: MealPlan | None = None
     prices_include_tax: bool | None = None
+    sell_online: bool | None = None
     min_stay_nights: int | None = Field(default=None, ge=1, le=365)
     sort_order: int | None = Field(default=None, ge=0, le=10_000)
     status: RecordStatus | None = None
@@ -134,6 +136,7 @@ class RatePlanOut(BaseModel):
     meal_plan: str
     currency: str
     prices_include_tax: bool
+    sell_online: bool
     min_stay_nights: int
     max_stay_nights: int | None
     stay_from: date | None

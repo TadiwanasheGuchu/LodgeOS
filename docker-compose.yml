@@ -50,10 +50,11 @@ services:
       redis:
         condition: service_healthy
 
-  # Delivers queued emails (ADR-0011). Uses the mock provider unless LODGEOS_EMAIL_PROVIDER=smtp.
+  # Delivers queued emails (ADR-0011) and expires website booking holds (ADR-0012).
+  # Uses the mock email provider unless LODGEOS_EMAIL_PROVIDER=smtp.
   worker:
     build: ./backend
-    command: ["python", "-m", "app.cli", "deliver-notifications"]
+    command: ["python", "-m", "app.cli", "run-worker"]
     env_file:
       - path: ./backend/.env
         required: false

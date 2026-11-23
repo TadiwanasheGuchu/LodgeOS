@@ -3,6 +3,7 @@ import uuid
 from datetime import time
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     ForeignKey,
     ForeignKeyConstraint,
@@ -12,6 +13,7 @@ from sqlalchemy import (
     Text,
     Time,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -56,6 +58,16 @@ class Property(TimestampMixin, Base):
         CheckConstraint(
             "weekend_nights <@ ARRAY[1,2,3,4,5,6,7]::smallint[]", name="weekend_nights"
         ),
+        CheckConstraint("booking_mode IN ('request', 'instant')", name="booking_mode"),
+        CheckConstraint(
+            "min_lead_days BETWEEN 0 AND 365 AND max_advance_days BETWEEN 1 AND 730"
+            " AND min_lead_days < max_advance_days",
+            name="booking_window",
+        ),
+        CheckConstraint("request_hold_hours BETWEEN 1 AND 336", name="request_hold"),
+        CheckConstraint(
+            "NOT booking_engine_enabled OR booking_terms IS NOT NULL", name="booking_terms"
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=new_uuid)
@@ -79,6 +91,25 @@ class Property(TimestampMixin, Base):
     # Printed on invoices (ADR-0009). "Tax invoice" is shown only when a tax number is set.
     legal_name: Mapped[str | None] = mapped_column(String(200))
     tax_number: Mapped[str | None] = mapped_column(String(50))
+    # Public booking engine (ADR-0012). Off until the property turns it on.
+    booking_engine_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    # "request": provisional until staff confirm; "instant": confirmed at once.
+    booking_mode: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="request", server_default=text("'request'")
+    )
+    public_description: Mapped[str | None] = mapped_column(Text)
+    booking_terms: Mapped[str | None] = mapped_column(Text)
+    min_lead_days: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default=text("0")
+    )
+    max_advance_days: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=365, server_default=text("365")
+    )
+    request_hold_hours: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=48, server_default=text("48")
+    )
     # Local times at the property. Stored as wall-clock time, interpreted in `timezone`.
     check_in_time: Mapped[time] = mapped_column(Time, nullable=False)
     check_out_time: Mapped[time] = mapped_column(Time, nullable=False)

@@ -214,6 +214,14 @@ All use tenant RLS (ADR-0010).
 |---|---|---|
 | `notifications` | `property_id`, `channel` (email), `kind` (booking_confirmation, invoice, receipt), `subject_type`, `subject_id`, `recipient`, `sender_name`, `reply_to`, `title`, `body_text`, `body_html`, `status` (queued, sent, failed), `attempts`, `next_attempt_at`, `last_error`, `provider`, `provider_message_id`, `idempotency_key` (UNIQUE per organisation), `created_by`, `created_at`, `sent_at` | Tenant RLS plus policy `notifications_worker` for the delivery worker (`app.notification_worker = 'on'`). Partial index on due queued rows. No DELETE |
 
+## Changes (Phase 4.1)
+
+- `properties`: `booking_engine_enabled`, `booking_mode` (request, instant), `public_description`, `booking_terms`, `min_lead_days`, `max_advance_days`, `request_hold_hours`, with CHECKs (terms required when enabled; sensible windows).
+- `rate_plans.sell_online`.
+- `reservations.hold_expires_at` (partial index on provisional rows with a hold) and `idempotency_key` (UNIQUE per organisation).
+- `notifications.created_by` may be empty (system-queued messages).
+- Functions `public_booking_property(org_slug, property_slug)` and `expired_request_holds()`: `SECURITY DEFINER`, `search_path` pinned, return ids only, `EXECUTE` granted to `lodgeos_app` only (ADR-0012).
+
 ## Planned tables
 
 Next (Phase 4): booking-engine sessions, guest portal access tokens, payment-gateway events (`integration_events`).

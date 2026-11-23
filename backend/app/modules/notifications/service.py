@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.config import get_settings
 from app.modules.notifications.models import Notification, NotificationStatus
 from app.modules.notifications.providers import DeliveryError, EmailProvider, OutgoingEmail
-from app.modules.notifications.templates import Rendered
+from app.modules.notifications.templates import Rendered, Venue
 from app.modules.properties.models import Property
 
 log = structlog.get_logger()
@@ -28,6 +28,28 @@ BACKOFF = [
 MAX_ATTEMPTS = len(BACKOFF) + 1
 
 
+def venue_of(prop: Property) -> Venue:
+    """The property as shown in an email footer."""
+    address = [
+        line
+        for line in (
+            prop.address_line1,
+            prop.address_line2,
+            " ".join(p for p in (prop.postal_code, prop.city) if p) or None,
+            prop.region,
+        )
+        if line
+    ]
+    return Venue(
+        name=prop.name,
+        address=address,
+        phone=prop.phone,
+        email=prop.email,
+        legal_name=prop.legal_name,
+        tax_number=prop.tax_number,
+    )
+
+
 async def queue(
     db: AsyncSession,
     *,
@@ -38,7 +60,7 @@ async def queue(
     recipient: str,
     rendered: Rendered,
     idempotency_key: str,
-    user_id: uuid.UUID,
+    user_id: uuid.UUID | None,
 ) -> tuple[Notification, bool]:
     """Write the message to the outbox in the caller's transaction. A repeated key returns
     the message already queued; the boolean says whether this call created it."""

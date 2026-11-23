@@ -188,7 +188,7 @@ async def create_reservation(
     status: ReservationStatus,
     source: str,
     notes: str | None,
-    user_id: uuid.UUID,
+    user_id: uuid.UUID | None,
 ) -> Reservation:
     if not rooms:
         raise BookingError("Add at least one room.", 422)
@@ -332,7 +332,7 @@ async def change_status(
     reservation: Reservation,
     to: ReservationStatus,
     *,
-    user_id: uuid.UUID,
+    user_id: uuid.UUID | None,
     reason: str | None = None,
     today: date | None = None,
 ) -> None:
@@ -474,7 +474,7 @@ async def change_dates(
     reservation: Reservation,
     check_in: date,
     check_out: date,
-    user_id: uuid.UUID,
+    user_id: uuid.UUID | None,
 ) -> tuple[Decimal, Decimal]:
     """Move a booking to new dates. Goes through the same lock-and-count as a new booking,
     not counting the booking's own rooms, and re-prices every room at today's rates.

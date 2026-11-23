@@ -183,6 +183,13 @@ export interface Property {
   email: string | null;
   legal_name: string | null;
   tax_number: string | null;
+  booking_engine_enabled: boolean;
+  booking_mode: "request" | "instant";
+  public_description: string | null;
+  booking_terms: string | null;
+  min_lead_days: number;
+  max_advance_days: number;
+  request_hold_hours: number;
   check_in_time: string;
   check_out_time: string;
   /** ISO weekdays (1 = Monday) of nights that use weekend prices. */
@@ -282,6 +289,7 @@ export interface RatePlan {
   meal_plan: MealPlan;
   currency: string;
   prices_include_tax: boolean;
+  sell_online: boolean;
   min_stay_nights: number;
   max_stay_nights: number | null;
   stay_from: string | null;
@@ -686,4 +694,44 @@ export interface NotificationRecord {
   created_at: string;
   sent_at: string | null;
   next_attempt_at: string;
+}
+
+export interface PublicProperty {
+  name: string;
+  property_type: string;
+  description: string | null;
+  address: string[];
+  phone: string | null;
+  email: string | null;
+  check_in_time: string;
+  check_out_time: string;
+  currency: string;
+  timezone: string;
+  booking_mode: "request" | "instant";
+  booking_terms: string;
+  today: string;
+  earliest_arrival: string;
+  latest_arrival: string;
+  room_types: { id: string; name: string; description: string | null; bed_configuration: string | null; max_occupancy: number; max_adults: number; max_children: number }[];
+}
+
+export interface RoomTypeOffers {
+  room_type_id: string;
+  name: string;
+  available: number;
+  offers: { rate_plan_id: string; name: string; description: string | null; meal_plan: string; total: string; tax_included: string; nights: number }[];
+}
+
+export interface PublicBooking {
+  reference: string;
+  status: "provisional" | "confirmed";
+  check_in: string;
+  check_out: string;
+  nights: number;
+  currency: string;
+  total: string;
+  rooms: { room_type: string; rate_plan: string; adults: number; children: number; total: string }[];
+  guest_name: string;
+  email: string;
+  hold_expires_at: string | null;
 }
