@@ -5,6 +5,7 @@ All notable changes are recorded here. Format based on [Keep a Changelog](https:
 ## [Unreleased]
 
 ### Added
+- Housekeeping day list (`/housekeeping`), built for phones: what each room needs today (departure clean, stay-over, arrival, vacant dirty) worked out from bookings, turnovers first, start and done (marks the room clean), service declined with a reason, reopen, "only my rooms", and assigning rooms for tomorrow. Departures can't be cleaned until the guest has checked out; early check-outs appear on the day the guest left. Guest names are never shown.
 - Maintenance: report a problem for a room or an area (anyone who sees rooms), urgent-first ticket list, start work, assign, resolve with a note, closed-ticket history. Rooms can be taken out of sale for specific dates; the block counts against availability, is refused if guests are in the room or it would oversell, shows on the booking calendar, and is released when the ticket is fixed.
 - Check-in (needs an assigned room, from the arrival date), check-out (room handed to housekeeping as dirty), no-shows, and changing a booking's dates with availability re-checked and the stay re-priced. Guest details can be corrected.
 - Booking calendar: rooms by date with stays as bars, bookings without a room shown per room type, weekend nights shaded.

@@ -3,17 +3,35 @@
 _Last updated: 2026-11-23_
 
 **Current phase:** 3 — Operations and finance
-**Current milestone:** 3.1 complete (maintenance)
+**Current milestone:** 3.2 complete (housekeeping)
 
 ## Phase 3 plan
 
 | Milestone | Scope | Status |
 |---|---|---|
 | 3.1 | Maintenance tickets (report, assign, work, resolve), dated room blocks that take a room out of sale and count against availability | ✅ Done |
-| 3.2 | Housekeeping task lists per day (departures, stay-overs), assignment, mobile-first | Planned |
+| 3.2 | Housekeeping task lists per day (departures, stay-overs, arrivals), assignment, mobile-first | ✅ Done |
 | 3.3 | Invoices from reservations (price snapshot), posting, credit notes | Planned |
 | 3.4 | Payments, allocations, refunds, reconciliation | Planned |
 | 3.5 | Notifications (email adapter, mock environment first) | Planned |
+
+## Phase 3.2 acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| The day's list is worked out from bookings and room status: departures (including early check-outs), stay-overs, arrivals into dirty rooms, vacant dirty rooms | ✅ Tested |
+| Departure rooms cannot be started or finished while the guest is still checked in | ✅ Tested |
+| Finishing a room marks it clean; reopening sends it back to dirty; stay-overs can be recorded as declined with a reason | ✅ Tested |
+| Tomorrow can be planned (assigned) but only today can be worked; past days are read-only | ✅ Tested |
+| Only staff who do housekeeping at the property can be assigned; maintenance staff can view but not act; other organisations get 404 | ✅ Tested |
+| Housekeeping never sees guest names | ✅ Tested |
+| Works on a phone without horizontal scrolling | ✅ Tested (E2E at 390 px) |
+
+## Test results (milestone 3.2)
+
+- Backend: **132 passed, 0 failed** (6 new). Lint, types, migration check clean.
+- Frontend unit and component: **17 passed**. End-to-end: **29 passed** (new: housekeeper on a phone starts and finishes the checked-out room; Room status shows it clean).
+- Not yet done: inspection workflow inside the list (supervisors use Room status for "Inspected"), linen and minibar counts, offline use.
 
 ## Phase 3.1 acceptance criteria
 
@@ -175,5 +193,5 @@ See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no password reset, no
 
 ## Next
 
-1. Milestone 3.2: housekeeping task lists.
-2. Milestones 3.3–3.5: invoices, payments, refunds, reconciliation, notifications.
+1. Milestone 3.3: invoices.
+2. Milestones 3.4–3.5: invoices, payments, refunds, reconciliation, notifications.

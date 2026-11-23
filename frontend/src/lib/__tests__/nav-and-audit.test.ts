@@ -17,6 +17,14 @@ describe("navFor", () => {
       "/properties",
       "/settings",
     ]);
+    // Housekeepers get their day's list first.
+    expect(only(["organisation.view"], { A: ["rooms.view", "rooms.housekeeping_update"] })).toEqual([
+      "/",
+      "/housekeeping",
+      "/rooms",
+      "/maintenance",
+      "/settings",
+    ]);
     expect(only(["organisation.view", "members.view", "audit.view"])).toEqual([
       "/",
       "/team",

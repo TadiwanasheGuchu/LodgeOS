@@ -10,6 +10,7 @@ from app.modules.access.models import (
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import User, UserSession
 from app.modules.guests.models import Guest
+from app.modules.housekeeping.models import HousekeepingTask
 from app.modules.maintenance.models import MaintenanceTicket, RoomBlock
 from app.modules.organisations.models import Organisation, OrganisationUser
 from app.modules.properties.models import Building, Property
@@ -21,6 +22,7 @@ __all__ = [
     "AuditLog",
     "Building",
     "Guest",
+    "HousekeepingTask",
     "Invitation",
     "MaintenanceTicket",
     "Organisation",

@@ -65,3 +65,29 @@ test("housekeeping reports, maintenance blocks the room, calendar shows it, fixi
   await page.getByRole("link", { name: "Closed" }).click();
   await expect(page.getByRole("listitem").filter({ hasText: problem })).toContainText("Done: Replaced the pressure valve");
 });
+
+test("housekeeper works today's list on a phone: the checked-out room is cleaned", async ({ page }) => {
+  // The stays spec checked a guest out of chalet 6 today.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signedIn(page, seed.housekeeping);
+  await page.goto("/housekeeping");
+  const switcher = page.getByRole("navigation", { name: "Property" }).getByRole("link", { name: propertyName });
+  if (await switcher.count()) {
+    await switcher.click();
+    await expect(switcher).toHaveAttribute("aria-current", "page");
+  }
+  const room = page.getByRole("listitem", { name: "Room 6" });
+  await expect(room).toContainText("Departure clean");
+  await expect(room).toContainText("Guest left");
+  await room.getByRole("button", { name: "Start" }).click();
+  await expect(room).toContainText("In progress");
+  await room.getByRole("button", { name: "Done" }).click();
+  await expect(room).toContainText("Done by Hilma Housekeeping");
+  await expect(room.getByRole("button", { name: "Reopen" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  await page.goto("/rooms");
+  const rooms = page.getByRole("navigation", { name: "Property" }).getByRole("link", { name: propertyName });
+  if (await rooms.count()) await rooms.click();
+  await expect(page.getByRole("group", { name: "Room 6 cleaning status" }).getByRole("button", { name: "Clean" })).toHaveAttribute("aria-pressed", "true");
+});
