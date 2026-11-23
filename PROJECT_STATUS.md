@@ -2,8 +2,8 @@
 
 _Last updated: 2026-11-23_
 
-**Current phase:** 3 — Operations and finance
-**Current milestone:** 3.4 complete (payments, refunds, cash-up)
+**Current phase:** 3 — Operations and finance (complete); next is Phase 4 — Booking commerce
+**Current milestone:** 3.5 complete (email notifications). Phase 3 complete
 
 ## Phase 3 plan
 
@@ -13,7 +13,26 @@ _Last updated: 2026-11-23_
 | 3.2 | Housekeeping task lists per day (departures, stay-overs, arrivals), assignment, mobile-first | ✅ Done |
 | 3.3 | Invoices from reservations (price snapshot), extras, issuing with gapless numbers, credit notes, printable invoice | ✅ Done |
 | 3.4 | Payments, deposits, allocations, refunds, reversals, daily cash-up | ✅ Done |
-| 3.5 | Notifications (email adapter, mock environment first) | Planned |
+| 3.5 | Email notifications: outbox, delivery worker, booking confirmations, invoices and receipts, mock and SMTP providers | ✅ Done |
+
+## Phase 3.5 acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| Booking confirmations, invoices and receipts are rendered from current data and queued in the same transaction as the request | ✅ Tested |
+| A repeated request (same idempotency key) queues one message | ✅ Tested |
+| The worker delivers due messages, retries failures with backoff and marks them failed after 6 attempts with the last error | ✅ Tested |
+| Guest-supplied text is escaped in HTML; internal booking notes are never emailed; no tracking or remote images | ✅ Tested |
+| The worker reads every outbox through a dedicated policy; tenant sessions still see only their own messages | ✅ Tested (RLS) |
+| The SMTP adapter speaks SMTP correctly (local test server) and turns connection failures into retryable errors | ✅ Tested. **Not yet tested against a commercial provider** (none chosen) |
+| The mock provider is clearly labelled "test mode" in the UI and refused in production | ✅ Tested |
+| Permissions follow the subject; other tenants get 404 | ✅ Tested |
+
+## Test results (milestone 3.5)
+
+- Backend: **154 passed, 0 failed** (7 new). Lint, types, migration round trip clean.
+- Frontend unit and component: **17 passed**. End-to-end: **32 passed** (new: email a confirmation, the API asks for an address when none is on file, the worker delivers it, the log shows "Sent (test mode)").
+- Not yet done: choosing a provider and a live delivery check, automatic sending per property, WhatsApp and SMS channels, bounce handling.
 
 ## Phase 3.4 acceptance criteria
 
@@ -32,7 +51,7 @@ _Last updated: 2026-11-23_
 
 - Backend: **147 passed, 0 failed** (8 new). Lint, types, migration round trip clean.
 - Frontend unit and component: **17 passed**. End-to-end: **31 passed** (new: deposit on a booking → invoice → apply deposit → settle in cash → cash-up shows both methods).
-- Not yet done: card gateway payments (Phase 4), multi-currency settlement, receipts by email (3.5), bank statement import.
+- Not yet done: card gateway payments (Phase 4), multi-currency settlement, bank statement import.
 
 ## Phase 3.3 acceptance criteria
 
@@ -231,5 +250,5 @@ See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no password reset, no
 
 ## Next
 
-1. Milestone 3.5: notifications (transactional email adapter against a mock provider first): booking confirmations, invoices and receipts.
-2. Then Phase 4: public booking engine, guest portal, payment gateway integration.
+1. Phase 4 plan: public booking engine per property (availability, pricing, provisional booking with deposit), guest portal, payment gateway adapter (provider to be chosen), property branding, automatic confirmations.
+2. Decisions needed from the product owner: email provider (any with SMTP), payment gateway for Namibia/Zimbabwe, and whether invoice numbering should be per property (separate legal entities) or per organisation (current).

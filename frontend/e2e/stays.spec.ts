@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { seed, signedIn } from "./fixtures";
+import { deliverEmails, seed, signedIn } from "./fixtures";
 
 // Runs after properties, rates and reservations specs, which set up Waterberg with chalets
 // 1-6 and a "Bed and breakfast" plan.
@@ -189,4 +189,35 @@ test("deposit on booking, invoice, apply deposit, settle in cash, see the cash-u
   await expect(takings.getByRole("row", { name: /^Cash/ })).toBeVisible();
   await expect(takings.getByRole("row", { name: /^Bank transfer/ })).toContainText("NAD 500.00");
   await expect(page.getByRole("region", { name: "Payments received" })).toContainText(`EFT-${seed.run}`);
+});
+
+test("email a booking confirmation; the worker delivers it in test mode", async ({ page }) => {
+  await signedIn(page, seed.receptionist);
+  await page.goto("/reservations");
+  await page.getByRole("navigation", { name: "Property" }).getByRole("link", { name: propertyName }).click();
+  await expect(page.getByText(new RegExp(`^${propertyName} · stays from`))).toBeVisible();
+  await page.getByRole("link", { name: "New booking" }).click();
+  await expect(page.getByText(propertyName, { exact: true })).toBeVisible();
+  await page.getByLabel("Arrival").fill("2027-07-01");
+  await page.getByLabel("Departure").fill("2027-07-03");
+  await page.getByRole("button", { name: "Add a Chalet" }).click();
+  await page.getByLabel("First name").fill("Ndapewa");
+  await page.getByLabel("Last name").fill(`Iipinge ${seed.run}`);
+  await page.getByRole("button", { name: /^Book/ }).click();
+  const reference = (await page.getByRole("heading", { name: /^LOS-/ }).textContent())!.match(/LOS-\w{6}/)![0];
+
+  await page.getByRole("button", { name: "Email confirmation" }).click();
+  const dialog = page.getByRole("dialog");
+  // No address on file: the API says so, and staff can enter one.
+  await dialog.getByRole("button", { name: "Send email" }).click();
+  await expect(dialog.getByText("There is no email address on file. Enter one to send to.")).toBeVisible();
+  await dialog.getByLabel("Send to").fill(`ndapewa-${seed.run}@example.com`);
+  await dialog.getByRole("button", { name: "Send email" }).click();
+  const log = page.getByRole("list", { name: "Emails" });
+  await expect(log).toContainText(`Your booking ${reference} is confirmed`);
+  await expect(log).toContainText("Waiting to send");
+
+  deliverEmails();
+  await page.reload();
+  await expect(log).toContainText("Sent (test mode: not delivered to the guest)");
 });

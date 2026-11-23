@@ -670,3 +670,20 @@ export interface CashUp {
   payments: Payment[];
   refunds: Refund[];
 }
+
+export interface NotificationRecord {
+  id: string;
+  kind: "booking_confirmation" | "invoice" | "receipt";
+  subject_type: "reservation" | "invoice" | "payment";
+  subject_id: string;
+  recipient: string;
+  title: string;
+  body_text: string;
+  status: "queued" | "sent" | "failed";
+  attempts: number;
+  last_error: string | null;
+  provider: string | null;
+  created_at: string;
+  sent_at: string | null;
+  next_attempt_at: string;
+}

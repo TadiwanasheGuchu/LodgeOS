@@ -3,6 +3,7 @@
 import { FileCheck2, Plus, Printer, Trash2, Undo2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { EmailButton } from "@/components/notifications/email-button";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -105,6 +106,15 @@ export function InvoiceActions({
             <Printer aria-hidden />
             Print or save as PDF
           </Button>
+          {canManage ? (
+            <EmailButton
+              url={`/api/v1/invoices/${invoice.id}/email`}
+              label="Email invoice"
+              title={`Email ${invoice.number}`}
+              description={`To ${invoice.bill_to_name}, with the lines, taxes and balance due.`}
+              size="md"
+            />
+          ) : null}
           {canCredit && balance !== "0.00" ? (
             <Button variant="ghost" onClick={() => setDialog("credit")}>
               <Undo2 aria-hidden />

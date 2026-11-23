@@ -64,8 +64,28 @@ The image runs as uid 10001 and does **not** run migrations on start. Migrations
 docker run --rm -e LODGEOS_MIGRATION_DATABASE_URL=... lodgeos-api alembic upgrade head
 ```
 
+## Email worker
+
+Emails are written to the `notifications` outbox by the API and delivered by a separate process (ADR-0011). In Compose it is the `worker` service; elsewhere run:
+
+```bash
+python -m app.cli deliver-notifications            # runs until stopped, polls every 5 s
+python -m app.cli deliver-notifications --once     # deliver what is due, then exit
+```
+
+The worker needs only `LODGEOS_DATABASE_URL` (the `lodgeos_app` role) and `LODGEOS_REDIS_URL`. Provider settings:
+
+| Variable | Default | Notes |
+|---|---|---|
+| `LODGEOS_EMAIL_PROVIDER` | `mock` | `mock` records messages in Redis (`mock-mailbox`) and sends nothing; the UI labels them "test mode". Production refuses `mock` |
+| `LODGEOS_EMAIL_FROM_ADDRESS` | `bookings@lodgeos.local` | Sender address on a domain with SPF, DKIM and DMARC set up for the provider |
+| `LODGEOS_SMTP_HOST`, `LODGEOS_SMTP_PORT` | `localhost`, `587` | Provider's SMTP submission host |
+| `LODGEOS_SMTP_USERNAME`, `LODGEOS_SMTP_PASSWORD` | none | Keep the password in the secret store, never in the repository |
+| `LODGEOS_SMTP_SECURITY` | `starttls` | `starttls` (587), `tls` (465) or `none` (local testing only) |
+
 ## Production checklist (to be completed in Phase 6)
 
+- Choose an email provider, set the SMTP variables, configure SPF/DKIM/DMARC, and send one real message per template before go-live.
 - Separate, generated passwords for `postgres`, `lodgeos_owner` and `lodgeos_app`; the API receives only the `lodgeos_app` URL.
 - Frontend: set `LODGEOS_API_ORIGIN` to the internal API address; serve both behind the same domain.
 - `LODGEOS_ENVIRONMENT=production` (disables `/docs` and `/openapi.json`), `LODGEOS_COOKIE_SECURE=true`.

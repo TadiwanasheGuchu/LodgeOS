@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -38,4 +39,12 @@ export function watchConsole(page: Page) {
   return {
     expectClean: () => expect(problems, problems.join("\n")).toEqual([]),
   };
+}
+
+/** Runs the email worker once against the test database, with the mock provider. */
+export function deliverEmails() {
+  execFileSync("uv", ["run", "python", "-m", "app.cli", "deliver-notifications", "--once"], {
+    cwd: path.resolve(__dirname, "../../backend"),
+    stdio: "pipe",
+  });
 }

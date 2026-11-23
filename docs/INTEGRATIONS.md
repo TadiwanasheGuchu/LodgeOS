@@ -16,7 +16,7 @@ Status: **none implemented.** Integrations arrive in Phases 3–5. Nothing here 
 | Integration | Purpose | Access requirement |
 |---|---|---|
 | Payment gateways | Deposits, payments, refunds | Merchant account per market; never store card data (use hosted fields / tokens) |
-| Transactional email | Confirmations, receipts | Provider account |
+| Transactional email | Booking confirmations, invoices, receipts | **Built (3.5):** outbox + worker with a `mock` provider (default; sends nothing) and a standard `smtp` adapter tested against a local SMTP test server only. Needs a provider account and one live check before production (ADR-0011) |
 | WhatsApp Business Platform | Guest messaging | Meta business verification and approved templates |
 | SMS | Fallback messaging | Provider account |
 | S3-compatible storage | Documents, images | Bucket per environment |

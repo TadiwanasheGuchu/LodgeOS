@@ -176,6 +176,17 @@ Payments follow ADR-0010. `idempotency_key` (8–64 characters, letters, digits,
 | GET | `/api/v1/properties/{id}/payments?reservation_id&unallocated_only` | `payments.view` | Recent payments |
 | GET | `/api/v1/properties/{id}/cash-up?from&to` | `payments.view` | Received, refunded and net per method and currency, per day and in total (up to 93 days; reversed payments excluded), plus the payments and refunds |
 
+## Endpoints (Phase 3.5)
+
+Emails go to the outbox and are delivered by the worker (ADR-0011). Each request carries an `idempotency_key`; a repeat returns the queued message (200) instead of a new one (202). `to` defaults to the guest's address on file; 422 when there is none.
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| POST | `/api/v1/reservations/{id}/email-confirmation` | `reservations.manage` | `{to?, idempotency_key}`. Provisional bookings get "booking request", confirmed ones "confirmed". Staff notes are never included |
+| POST | `/api/v1/invoices/{id}/email` | `invoices.manage` | Issued invoices only: lines, taxes, credits, payments and balance due |
+| POST | `/api/v1/payments/{id}/email-receipt` | `payments.manage` | Not for reversed payments; lists the invoices it was applied to |
+| GET | `/api/v1/notifications?subject_type&subject_id` | view permission of the subject | Messages about a booking, invoice or payment: recipient, title, text body, status, attempts, last error, provider |
+
 ## Role permissions
 
 Defaults of the six system roles (organisation-wide grants). A role granted for one property applies its `properties.*`, `rooms.*`, `rates.*`, `reservations.*`, `invoices.*` and `payments.*` permissions to that property only.
