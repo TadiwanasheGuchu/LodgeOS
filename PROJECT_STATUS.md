@@ -3,7 +3,7 @@
 _Last updated: 2026-11-23_
 
 **Current phase:** 4 — Booking commerce
-**Current milestone:** 4.2 complete (guest portal)
+**Current milestone:** 4.4 complete (photos and logo); 4.3 waits on the payment gateway
 
 ## Phase 4 plan
 
@@ -12,7 +12,25 @@ _Last updated: 2026-11-23_
 | 4.1 | Public booking engine per property: availability and prices for online rates, request or instant booking, expiring holds, automatic confirmation email, staff settings | ✅ Done |
 | 4.2 | Guest portal: secret link per booking (email and WhatsApp), booking, invoices and balance, arrival details, cancellation requests | ✅ Done |
 | 4.3 | Payment gateway adapter (provider to be chosen): deposits on the booking engine, webhook idempotency, reconciliation with ADR-0010 payments | Blocked on provider choice |
-| 4.4 | Property branding (logo, photos) with S3-compatible storage; automatic confirmations for staff bookings | Planned |
+| 4.4 | Logo, property and room-type photos with S3-compatible storage, shown on the booking page in small sizes for phones | ✅ Done |
+
+## Phase 4.4 acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| Only real JPEG, PNG or WebP images are accepted, judged by decoding; non-images, GIFs, tiny photos, image bombs and files over 8 MB are refused | ✅ Tested |
+| Uploads are re-encoded: phone rotation applied, all metadata (camera, GPS) removed | ✅ Tested (EXIF checked on the served file) |
+| Photos stored at 400, 800 and 1600 px WebP (never enlarged); logos at 160 and 480 px with transparency | ✅ Tested |
+| The booking page shows logo, hero, more photos and room-type photos with `srcset`, so phones load small files | ✅ Tested (E2E: images load) and screenshot |
+| A new logo replaces the old; deleting removes the files; serving accepts only ids and known sizes; local storage refuses paths outside its folder | ✅ Tested |
+| S3 adapter stores, reads and deletes through the S3 protocol | ✅ Tested against moto's S3-compatible test server. **Not yet against a real provider** |
+| Only property managers upload; other tenants get 404 | ✅ Tested |
+
+## Test results (milestone 4.4)
+
+- Backend: **172 passed, 0 failed** (6 new). Lint, types, migration round trip clean.
+- Frontend unit and component: **17 passed**. End-to-end: **35 passed** (extended: owner uploads logo, property and room photos, is asked for a description; the guest's booking page loads them).
+- Not yet done: reordering photos by drag and drop (the API accepts `sort_order`), cropping, a real storage provider.
 
 ## Phase 4.2 acceptance criteria
 
@@ -295,5 +313,5 @@ See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no password reset, no
 
 ## Next
 
-1. Milestone 4.3 once a gateway is chosen (DPO Pay recommended); otherwise 4.4 property photos and branding.
+1. Milestone 4.3 once DPO Pay (recommended) or another gateway provides test credentials. Otherwise Phase 5 (POS, activities, reporting) can start.
 2. Decisions needed from the product owner: email provider (any with SMTP), payment gateway for Namibia/Zimbabwe, and whether invoice numbering should be per property (separate legal entities) or per organisation (current).

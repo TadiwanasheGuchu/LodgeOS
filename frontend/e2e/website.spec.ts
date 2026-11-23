@@ -1,3 +1,4 @@
+import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { seed, signedIn } from "./fixtures";
 
@@ -8,6 +9,26 @@ test("owner opens online booking; a guest books from a phone", async ({ page }) 
   await signedIn(page, seed.owner);
   await page.goto("/properties");
   await page.getByRole("link", { name: propertyName }).first().click();
+  await page.getByRole("navigation", { name: "Property sections" }).getByRole("link", { name: "Online booking" }).click();
+
+  // Photos and logo for the booking page.
+  await page.getByRole("navigation", { name: "Property sections" }).getByRole("link", { name: "Photos" }).click();
+  const logoBox = page.getByRole("region", { name: "Logo" });
+  await logoBox.getByLabel("Logo image").setInputFiles(path.join(__dirname, "files/logo.png"));
+  await logoBox.getByRole("button", { name: "Upload" }).click();
+  await expect(logoBox.getByRole("img", { name: "Logo" })).toBeVisible();
+  const photos = page.getByRole("region", { name: "Property photos" });
+  await photos.getByLabel("Add a photo").setInputFiles(path.join(__dirname, "files/deck.jpg"));
+  await photos.getByRole("button", { name: "Upload" }).click();
+  await expect(photos.getByText("Describe the photo in a few words, for people who cannot see it.")).toBeVisible();
+  await photos.getByLabel("Description").fill("Deck facing the waterhole");
+  await photos.getByRole("button", { name: "Upload" }).click();
+  await expect(photos.getByRole("img", { name: "Deck facing the waterhole" })).toBeVisible();
+  const chaletPhotos = page.getByRole("region", { name: "Chalet photos" });
+  await chaletPhotos.getByLabel("Add a photo").setInputFiles(path.join(__dirname, "files/deck.jpg"));
+  await chaletPhotos.getByLabel("Description").fill("Chalet bedroom");
+  await chaletPhotos.getByRole("button", { name: "Upload" }).click();
+  await expect(chaletPhotos.getByRole("img", { name: "Chalet bedroom" })).toBeVisible();
   await page.getByRole("navigation", { name: "Property sections" }).getByRole("link", { name: "Online booking" }).click();
 
   // Terms are required before going live.
@@ -28,11 +49,16 @@ test("owner opens online booking; a guest books from a phone", async ({ page }) 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(new URL(url).pathname);
   await expect(page.getByText("Chalets on the Waterberg plateau.")).toBeVisible();
+  const hero = page.getByRole("img", { name: "Deck facing the waterhole" });
+  await expect(hero).toBeVisible();
+  expect(await hero.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+  await expect(page.getByRole("img", { name: new RegExp(`${propertyName} logo`) })).toBeVisible();
   await page.getByLabel("Arrival").fill("2027-08-10");
   await page.getByLabel("Departure").fill("2027-08-12");
   await page.getByRole("button", { name: "Check availability" }).click();
   const chalet = page.getByRole("article", { name: "Chalet" });
   await expect(chalet).toContainText("Bed and breakfast");
+  await expect(chalet.getByRole("img", { name: "Chalet bedroom" })).toBeVisible();
   await expect(chalet).toContainText("2 nights, taxes included");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await chalet.getByRole("button", { name: "Book" }).first().click();

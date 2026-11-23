@@ -3,6 +3,7 @@
 import { ArrowLeft, BedDouble, CalendarCheck, Clock } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Alert } from "@/components/ui/alert";
+import { Picture } from "@/components/media/picture";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
 import { api, ApiError } from "@/lib/api-client";
@@ -113,7 +114,14 @@ export function BookingFlow({ org, slug, property }: { org: string; slug: string
             {available.map((r) => {
               const info = property.room_types.find((t) => t.id === r.room_type_id);
               return (
-                <article key={r.room_type_id} aria-label={r.name} className="rounded-lg border border-line bg-white">
+                <article key={r.room_type_id} aria-label={r.name} className="overflow-hidden rounded-lg border border-line bg-white">
+                  {info?.photos.length ? (
+                    <div className="flex snap-x gap-1 overflow-x-auto">
+                      {info.photos.map((ph, i) => (
+                        <Picture key={ph.urls.sm} image={ph} sizes="(min-width: 768px) 368px, 85vw" priority={i === 0} className={`aspect-[3/2] shrink-0 snap-start object-cover ${info.photos.length === 1 ? "w-full" : "w-[85%] sm:w-1/2"}`} />
+                      ))}
+                    </div>
+                  ) : null}
                   <div className="border-b border-line px-4 py-3 sm:px-5">
                     <h3 className="flex items-center gap-2 font-semibold text-forest">
                       <BedDouble className="size-4" aria-hidden />

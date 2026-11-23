@@ -8,6 +8,12 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 Key = Annotated[str, Field(min_length=8, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")]
 
 
+class PublicImage(BaseModel):
+    alt: str
+    urls: dict[str, str]
+    widths: dict[str, int]
+
+
 class PublicRoomType(BaseModel):
     id: uuid.UUID
     name: str
@@ -16,6 +22,7 @@ class PublicRoomType(BaseModel):
     max_occupancy: int
     max_adults: int
     max_children: int
+    photos: list[PublicImage] = []
 
 
 class PublicProperty(BaseModel):
@@ -35,6 +42,8 @@ class PublicProperty(BaseModel):
     earliest_arrival: dt.date
     latest_arrival: dt.date
     room_types: list[PublicRoomType]
+    logo: PublicImage | None = None
+    photos: list[PublicImage] = []
 
 
 class Offer(BaseModel):

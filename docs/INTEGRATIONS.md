@@ -19,7 +19,7 @@ Status: **none implemented.** Integrations arrive in Phases 3–5. Nothing here 
 | Transactional email | Booking confirmations, invoices, receipts | **Built (3.5):** outbox + worker with a `mock` provider (default; sends nothing) and a standard `smtp` adapter tested against a local SMTP test server only. Needs a provider account and one live check before production (ADR-0011) |
 | WhatsApp Business Platform | Guest messaging | Meta business verification and approved templates |
 | SMS | Fallback messaging | Provider account |
-| S3-compatible storage | Documents, images | Bucket per environment |
+| S3-compatible storage | Property and room photos, logos | **Built (4.4):** `local` and `s3` adapters (ADR-0014); S3 tested against moto's S3-compatible test server only. Needs a bucket and one live check before production |
 | Booking.com | OTA reservations, availability | Connectivity partner approval — **not assumed** |
 | Expedia | OTA reservations, availability | Partner approval — **not assumed** |
 | SiteMinder or equivalent | Channel management | Partner agreement |

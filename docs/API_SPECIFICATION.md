@@ -214,6 +214,20 @@ The token is the secret part of a guest link (ADR-0013); only its SHA-256 is sto
 
 Booking confirmation emails now include a "View or update your booking" link. `GET /api/v1/reservations/{id}` adds `hold_expires_at`, `guest_arrival_time`, `guest_message`, `guest_updated_at`, `cancellation_requested_at`, `cancellation_request_reason`.
 
+## Endpoints (Phase 4.4): photos and logo
+
+ADR-0014. Uploads are raw request bodies with an `image/*` content type (max 8 MB). Images are decoded, checked (JPEG, PNG, WebP; ≤ 40 megapixels; photos ≥ 400×250), re-encoded without metadata and stored as WebP sizes.
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| POST | `/api/v1/properties/{id}/media?kind&room_type_id&alt_text` | `properties.manage` | `kind`: `logo` (replaces the current one), `property_photo` (max 30), `room_type_photo` (max 10 per type, needs `room_type_id`). Photos need `alt_text`. 413 too large, 415 not an image type, 422 not a usable image |
+| GET | `/api/v1/properties/{id}/media` | `properties.view` | Current logo and photos with size URLs and widths |
+| PATCH | `/api/v1/media/{id}` | `properties.manage` | `{alt_text?, sort_order?}` |
+| DELETE | `/api/v1/media/{id}` | `properties.manage` | Removes the files; the record is kept as deleted |
+| GET | `/api/v1/media/{organisation}/{asset}/{sm\|md\|lg}.webp` | public | The image, cached for a year (`immutable`) |
+
+`GET /api/v1/public/properties/{org}/{property}` adds `logo`, `photos` and each room type's `photos` (`{alt, urls, widths}`).
+
 ## Role permissions
 
 Defaults of the six system roles (organisation-wide grants). A role granted for one property applies its `properties.*`, `rooms.*`, `rates.*`, `reservations.*`, `invoices.*` and `payments.*` permissions to that property only.

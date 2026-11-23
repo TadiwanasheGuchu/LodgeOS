@@ -84,8 +84,22 @@ The worker needs only `LODGEOS_DATABASE_URL` (the `lodgeos_app` role) and `LODGE
 | `LODGEOS_SMTP_USERNAME`, `LODGEOS_SMTP_PASSWORD` | none | Keep the password in the secret store, never in the repository |
 | `LODGEOS_SMTP_SECURITY` | `starttls` | `starttls` (587), `tls` (465) or `none` (local testing only) |
 
+## Photo storage
+
+ADR-0014. Development writes to `backend/var/media` (ignored by git). Production should use S3-compatible storage:
+
+| Variable | Default | Notes |
+|---|---|---|
+| `LODGEOS_STORAGE_BACKEND` | `local` | `local` or `s3` |
+| `LODGEOS_STORAGE_LOCAL_PATH` | `var/media` | Directory for `local`; back it up with the database |
+| `LODGEOS_S3_BUCKET` | `lodgeos-media` | Private bucket; LodgeOS serves the images itself |
+| `LODGEOS_S3_ENDPOINT_URL` | none | Needed for non-AWS providers (R2, Wasabi, MinIO) |
+| `LODGEOS_S3_REGION` | `af-south-1` | |
+| `LODGEOS_S3_ACCESS_KEY_ID`, `LODGEOS_S3_SECRET_ACCESS_KEY` | none | Secret store only; a key limited to this bucket |
+
 ## Production checklist (to be completed in Phase 6)
 
+- Choose S3-compatible storage, create a private bucket and a key limited to it, and upload one photo end to end before go-live.
 - Choose an email provider, set the SMTP variables, configure SPF/DKIM/DMARC, and send one real message per template before go-live.
 - Separate, generated passwords for `postgres`, `lodgeos_owner` and `lodgeos_app`; the API receives only the `lodgeos_app` URL.
 - Frontend: set `LODGEOS_API_ORIGIN` to the internal API address; serve both behind the same domain.

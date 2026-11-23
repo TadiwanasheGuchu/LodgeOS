@@ -17,3 +17,4 @@ One file per significant decision: `NNNN-short-title.md` with Status, Context, D
 | 0011 | Email notifications through an outbox | Accepted |
 | 0012 | Public booking engine | Accepted |
 | 0013 | Guest portal through secret links | Accepted |
+| 0014 | Photos and logos in S3-compatible storage | Accepted |

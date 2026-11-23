@@ -19,12 +19,15 @@ from app.modules.booking_engine.schemas import (
     PublicBooking,
     PublicBookingCreate,
     PublicBookingRoom,
+    PublicImage,
     PublicProperty,
     PublicRoomType,
     RoomTypeOffers,
 )
 from app.modules.guest_portal import service as guest_links
 from app.modules.guests.models import Guest
+from app.modules.media.models import MediaAsset, MediaKind
+from app.modules.media.router import media_out
 from app.modules.notifications import service as notifications
 from app.modules.notifications import templates
 from app.modules.notifications.models import NotificationKind
@@ -117,6 +120,19 @@ async def _online_plans(db: DB, prop: Property) -> list[RatePlan]:
 async def public_property(org_slug: str, property_slug: str, db: DB) -> PublicProperty:
     prop = await _property(db, org_slug, property_slug)
     first, last = _window(prop)
+    assets = (
+        await db.scalars(
+            select(MediaAsset)
+            .where(MediaAsset.property_id == prop.id, MediaAsset.deleted_at.is_(None))
+            .order_by(MediaAsset.sort_order, MediaAsset.created_at)
+        )
+    ).all()
+
+    def image(a: MediaAsset) -> PublicImage:
+        out = media_out(a)
+        return PublicImage(alt=a.alt_text or prop.name, urls=out.urls, widths=out.widths)
+
+    logo = next((image(a) for a in assets if a.kind == MediaKind.LOGO), None)
     address = [
         line
         for line in (
@@ -152,9 +168,12 @@ async def public_property(org_slug: str, property_slug: str, db: DB) -> PublicPr
                 max_occupancy=rt.max_occupancy,
                 max_adults=rt.max_adults,
                 max_children=rt.max_children,
+                photos=[image(a) for a in assets if a.room_type_id == rt.id],
             )
             for rt in await _room_types(db, prop)
         ],
+        logo=logo,
+        photos=[image(a) for a in assets if a.kind == MediaKind.PROPERTY_PHOTO],
     )
 
 
