@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { accessOf } from "@/lib/access";
 import { addDays, formatStayDate, isIsoDate, todayIn } from "@/lib/dates";
 import { apiGet, requireOrganisation } from "@/lib/server/api";
-import type { CalendarData, CalendarStay, PropertySummary } from "@/lib/types";
+import type { CalendarData, CalendarStay, PropertySummary, RoomBlockInfo } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Calendar" };
@@ -24,10 +24,24 @@ function nightsBetween(a: string, b: string) {
 }
 
 /** Grid column placement of a stay within the visible window (1-based, clipped). */
-function placement(stay: CalendarStay, start: string) {
+function placement(stay: { check_in: string; check_out: string }, start: string) {
   const from = Math.max(0, nightsBetween(start, stay.check_in));
   const to = Math.min(DAYS, nightsBetween(start, stay.check_out));
   return { column: from + 2, span: Math.max(1, to - from), clippedStart: nightsBetween(start, stay.check_in) < 0, clippedEnd: nightsBetween(start, stay.check_out) > DAYS };
+}
+
+/** A maintenance block: hatched, not a link, sits under any stay bars. */
+function BlockBar({ block, start, row }: { block: RoomBlockInfo; start: string; row: number }) {
+  const p = placement({ check_in: block.start_date, check_out: block.end_date }, start);
+  return (
+    <div
+      style={{ gridColumn: `${p.column} / span ${p.span}`, gridRow: row, backgroundImage: "repeating-linear-gradient(135deg, var(--color-line) 0 2px, transparent 2px 7px)" }}
+      className={cn("relative z-10 my-1 flex min-w-0 items-center truncate rounded-sm border border-charcoal/40 bg-cloud px-2 text-[12px] font-medium text-charcoal", p.clippedStart && "rounded-l-none border-l-0", p.clippedEnd && "rounded-r-none border-r-0")}
+      title={`Out of sale: ${block.reason} · ${block.start_date} to ${block.end_date}`}
+    >
+      <span className="truncate">Blocked · {block.reason}</span>
+    </div>
+  );
 }
 
 function StayBar({ stay, start, row }: { stay: CalendarStay; start: string; row: number }) {
@@ -66,12 +80,17 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
   const current = properties.find((p) => p.id === sp.property) ?? properties[0];
   const today = todayIn(current.timezone);
   const start = isIsoDate(sp.start) ? sp.start : addDays(today, -1);
-  const data = await apiGet<CalendarData>(`/api/v1/properties/${current.id}/calendar?start=${start}&days=${DAYS}`);
+  const [data, blocks] = await Promise.all([
+    apiGet<CalendarData>(`/api/v1/properties/${current.id}/calendar?start=${start}&days=${DAYS}`),
+    access.canAt("rooms.view", current.id)
+      ? apiGet<RoomBlockInfo[]>(`/api/v1/properties/${current.id}/room-blocks?from=${start}&to=${addDays(start, DAYS)}`)
+      : Promise.resolve([] as RoomBlockInfo[]),
+  ]);
   const dates = Array.from({ length: DAYS }, (_, i) => addDays(start, i));
   const link = (s: string) => `/calendar?${new URLSearchParams({ property: current.id, start: s })}`;
 
   // Rows: each room; after each room type's rooms, one row per unassigned stay of that type.
-  type Row = { key: string; label: string; sub?: string; stays: CalendarStay[]; unassigned?: boolean };
+  type Row = { key: string; label: string; sub?: string; stays: CalendarStay[]; blocks?: RoomBlockInfo[]; unassigned?: boolean };
   const rows: Row[] = [];
   const typeOrder = [...new Set(data.rooms.map((r) => r.room_type_id))];
   for (const typeId of typeOrder) {
@@ -81,6 +100,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
         label: room.number,
         sub: room.room_type_code + (room.maintenance_status === "out_of_order" ? " · out of order" : ""),
         stays: data.stays.filter((s) => s.room_id === room.id),
+        blocks: blocks.filter((b) => b.room_id === room.id),
       });
     }
     const code = data.rooms.find((r) => r.room_type_id === typeId)?.room_type_code ?? "";
@@ -137,6 +157,9 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
                 {dates.map((d, j) => (
                   <div key={d} style={{ gridRow: i + 2, gridColumn: j + 2 }} className={cn("border-b border-l border-line", d === today && "bg-mist/60")} />
                 ))}
+                {row.blocks?.map((b) => (
+                  <BlockBar key={b.id} block={b} start={start} row={i + 2} />
+                ))}
                 {row.stays.map((s) => (
                   <StayBar key={s.reservation_room_id} stay={s} start={start} row={i + 2} />
                 ))}
@@ -149,6 +172,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/calenda
         <span><span className="mr-1 inline-block size-3 rounded-sm border border-teal bg-mist align-middle" />Confirmed</span>
         <span><span className="mr-1 inline-block size-3 rounded-sm border border-dashed border-warning bg-warning-tint align-middle" />Provisional</span>
         <span><span className="mr-1 inline-block size-3 rounded-sm border border-success bg-success-tint align-middle" />Checked in</span>
+        <span><span className="mr-1 inline-block size-3 rounded-sm border border-charcoal/40 bg-cloud align-middle" style={{ backgroundImage: "repeating-linear-gradient(135deg, var(--color-line) 0 2px, transparent 2px 5px)" }} />Out of sale (maintenance)</span>
         <span>Yellow rows are bookings without a room yet. Open a booking to assign one.</span>
       </p>
     </>

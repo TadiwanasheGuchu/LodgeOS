@@ -123,6 +123,17 @@ All amounts are decimal strings, e.g. `"1250.00"`.
 
 Status flow: provisional → confirmed → checked in → checked out; provisional or confirmed → cancelled (reason) or no-show.
 
+## Endpoints (Phase 3.1)
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| GET | `/api/v1/properties/{id}/maintenance/tickets?closed` | `rooms.view` | Open tickets (urgent first, then oldest), or closed ones with `closed=true`; each with its room blocks |
+| POST | `/api/v1/properties/{id}/maintenance/tickets` | `rooms.view` | Report a problem: `{room_id \| location, title, description, priority}` |
+| PATCH | `/api/v1/maintenance/tickets/{id}` | `rooms.maintenance_update` | Status, priority, assignee (active member), resolution. Resolving needs a resolution; closing releases the ticket's blocks. 409 once closed |
+| POST | `/api/v1/maintenance/tickets/{id}/blocks` | `rooms.maintenance_update` | `{start_date, end_date}` (end exclusive). 409 if guests are in the room, it overlaps another block, or it would oversell the room type |
+| POST | `/api/v1/room-blocks/{id}/release` | `rooms.maintenance_update` | Put the room back on sale |
+| GET | `/api/v1/properties/{id}/room-blocks?from&to` | `rooms.view` | Active blocks overlapping the range (calendar) |
+
 ## Role permissions
 
 Defaults of the six system roles (organisation-wide grants). A role granted for one property applies its `properties.*` and `rooms.*` permissions to that property only.

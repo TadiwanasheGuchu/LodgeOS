@@ -15,5 +15,5 @@ Two receptionists, an online booking and an OTA can try to sell the last room at
 
 ## Consequences
 - Bookings for one room type at one property are serialised; at lodge scale this is negligible.
-- Out-of-order rooms are not yet dated, so taking a room out of order reduces inventory for all dates until it is fixed. Dated room blocks come with the maintenance module.
+- Out-of-order rooms are not dated, so taking a room out of order reduces inventory for all dates until it is fixed. For planned work, use a dated room block (Phase 3.1): it takes the same room-type lock, is refused if it would oversell, and reduces inventory only on its nights.
 - Modifying dates or rooms of an existing booking must go through the same lock-and-count path (Phase 2.3).

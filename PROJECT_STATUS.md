@@ -1,9 +1,36 @@
 # Project Status
 
-_Last updated: 2026-11-16_
+_Last updated: 2026-11-23_
 
-**Current phase:** 2 — Reservations (complete); next is Phase 3 — Operations and finance
-**Current milestone:** 2.3 complete
+**Current phase:** 3 — Operations and finance
+**Current milestone:** 3.1 complete (maintenance)
+
+## Phase 3 plan
+
+| Milestone | Scope | Status |
+|---|---|---|
+| 3.1 | Maintenance tickets (report, assign, work, resolve), dated room blocks that take a room out of sale and count against availability | ✅ Done |
+| 3.2 | Housekeeping task lists per day (departures, stay-overs), assignment, mobile-first | Planned |
+| 3.3 | Invoices from reservations (price snapshot), posting, credit notes | Planned |
+| 3.4 | Payments, allocations, refunds, reconciliation | Planned |
+| 3.5 | Notifications (email adapter, mock environment first) | Planned |
+
+## Phase 3.1 acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| Anyone who can see rooms can report a problem for a room or a named area; only maintenance staff can work, assign and close tickets | ✅ Tested (API and E2E) |
+| A room block reduces availability on its nights only; blocked rooms cannot be booked or assigned | ✅ Tested |
+| A block is refused when guests are in the room or when it would oversell the room type on any night (under the same room-type lock as bookings) | ✅ Tested |
+| Resolving or cancelling a ticket releases its blocks; a resolution note is required | ✅ Tested |
+| Blocks appear on the booking calendar in the room's row | ✅ Tested (E2E) |
+| Ticket and block changes are audited; tenant and property isolation hold | ✅ Tested |
+
+## Test results (milestone 3.1)
+
+- Backend: **126 passed, 0 failed**. Lint, types, migration check (upgrade, downgrade, upgrade) clean.
+- Frontend unit and component: **17 passed**. End-to-end: **28 passed** (new: housekeeping reports → maintenance starts and blocks the room → calendar shows the block → marked fixed, ticket moves to Closed).
+- Not yet done: photos on tickets (needs secure upload storage), recurring preventive maintenance, notifications to the assignee.
 
 ## Phase 2 plan
 
@@ -148,5 +175,5 @@ See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no password reset, no
 
 ## Next
 
-1. Phase 3: housekeeping task lists, maintenance tickets with dated room blocks, invoices, payments, refunds, reconciliation, notifications.
-2. Phase 3: availability, reservations, booking calendar, guest records, check-in and check-out.
+1. Milestone 3.2: housekeeping task lists.
+2. Milestones 3.3–3.5: invoices, payments, refunds, reconciliation, notifications.

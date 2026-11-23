@@ -21,6 +21,7 @@ from typing import Any
 from sqlalchemy import ColumnElement, and_, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.modules.maintenance.models import BlockStatus, RoomBlock
 from app.modules.properties.models import Property, RecordStatus
 from app.modules.rates import pricing
 from app.modules.rates.service import price_stay
@@ -46,6 +47,23 @@ class BookingError(ValueError):
 
 def new_reference() -> str:
     return "LOS-" + "".join(secrets.choice(REFERENCE_ALPHABET) for _ in range(6))
+
+
+async def room_is_blocked(
+    db: AsyncSession, room_id: uuid.UUID, check_in: date, check_out: date
+) -> bool:
+    return bool(
+        await db.scalar(
+            select(func.count())
+            .select_from(RoomBlock)
+            .where(
+                RoomBlock.room_id == room_id,
+                RoomBlock.status == BlockStatus.ACTIVE,
+                RoomBlock.start_date < check_out,
+                RoomBlock.end_date > check_in,
+            )
+        )
+    )
 
 
 def nights(check_in: date, check_out: date) -> list[date]:
@@ -94,6 +112,11 @@ async def availability(
         text(
             """
             SELECT d::date AS night,
+                   (SELECT count(*) FROM room_blocks b JOIN rooms r ON r.id = b.room_id
+                     WHERE r.room_type_id = :rt AND r.status = 'active'
+                       AND r.maintenance_status <> 'out_of_order'
+                       AND b.status = 'active'
+                       AND b.start_date <= d::date AND b.end_date > d::date) AS blocked,
                    (SELECT count(*) FROM reservation_rooms rr
                      WHERE rr.room_type_id = :rt
                        AND rr.status IN ('provisional', 'confirmed', 'checked_in')
@@ -106,7 +129,8 @@ async def availability(
         ),
         {"rt": room_type_id, "ci": check_in, "co": check_out, "excl": exclude_reservation_id},
     )
-    return [NightAvailability(r.night, sellable, int(r.booked)) for r in rows]
+    # Dated blocks remove a room from sale only on their nights.
+    return [NightAvailability(r.night, sellable - int(r.blocked), int(r.booked)) for r in rows]
 
 
 @dataclass(frozen=True)
@@ -229,6 +253,10 @@ async def create_reservation(
             raise BookingError(f"Room {room.number} is archived.", 422)
         if room.maintenance_status == MaintenanceStatus.OUT_OF_ORDER:
             raise BookingError(f"Room {room.number} is out of order.")
+        if await room_is_blocked(db, room.id, check_in, check_out):
+            raise BookingError(
+                f"Room {room.number} is blocked for maintenance on some of these nights."
+            )
 
     # 5. Write the booking.
     reference = new_reference()
@@ -390,6 +418,15 @@ async def free_rooms(db: AsyncSession, rr: ReservationRoom) -> list[Room]:
         )
         .scalar_subquery()
     )
+    blocked = (
+        select(RoomBlock.room_id)
+        .where(
+            RoomBlock.status == BlockStatus.ACTIVE,
+            RoomBlock.start_date < rr.check_out,
+            RoomBlock.end_date > rr.check_in,
+        )
+        .scalar_subquery()
+    )
     rows = await db.scalars(
         select(Room)
         .where(
@@ -397,6 +434,7 @@ async def free_rooms(db: AsyncSession, rr: ReservationRoom) -> list[Room]:
             Room.status == RecordStatus.ACTIVE,
             Room.maintenance_status != MaintenanceStatus.OUT_OF_ORDER,
             Room.id.not_in(clash),
+            Room.id.not_in(blocked),
         )
         .order_by(func.length(Room.number), Room.number)
     )
@@ -418,6 +456,10 @@ async def assign_room(db: AsyncSession, rr: ReservationRoom, room_id: uuid.UUID 
             raise BookingError(f"Room {room.number} is archived.", 422)
         if room.maintenance_status == MaintenanceStatus.OUT_OF_ORDER:
             raise BookingError(f"Room {room.number} is out of order.")
+        if await room_is_blocked(db, room.id, rr.check_in, rr.check_out):
+            raise BookingError(
+                f"Room {room.number} is blocked for maintenance on some of these nights."
+            )
     rr.room_id = room_id
     await db.flush()
 

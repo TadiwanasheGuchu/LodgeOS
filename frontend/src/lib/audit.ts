@@ -34,6 +34,10 @@ const LABELS: Record<string, string> = {
   "season.created": "Added a season",
   "season.updated": "Changed a season",
   "season.deleted": "Deleted a season",
+  "maintenance.reported": "Reported a maintenance problem",
+  "maintenance.updated": "Updated a maintenance ticket",
+  "maintenance.room_blocked": "Took a room out of sale",
+  "maintenance.room_released": "Put a room back on sale",
   "reservation.created": "Made a booking",
   "reservation.confirmed": "Confirmed a booking",
   "reservation.cancelled": "Cancelled a booking",
@@ -87,6 +91,12 @@ export function describeChanges(entry: AuditLogEntry): string[] {
   }
   if (entry.action.startsWith("invitation.") && d.email) {
     return [d.role ? `${String(d.email)} as ${String(d.role)}` : String(d.email)];
+  }
+  if (entry.action === "maintenance.reported" && d.title) {
+    return [String(d.title)];
+  }
+  if (entry.action === "maintenance.room_blocked") {
+    return [`Room ${String(d.room)}: ${String(d.from)} until ${String(d.to)}`];
   }
   if (!entry.action.endsWith(".updated")) return [];
   const before = (entry.data.before ?? {}) as Record<string, unknown>;

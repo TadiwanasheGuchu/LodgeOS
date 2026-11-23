@@ -13,6 +13,7 @@ describe("navFor", () => {
     expect(only(["organisation.view"], { A: ["rooms.view", "properties.view"] })).toEqual([
       "/",
       "/rooms",
+      "/maintenance",
       "/properties",
       "/settings",
     ]);
