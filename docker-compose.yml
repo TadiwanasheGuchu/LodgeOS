@@ -50,6 +50,22 @@ services:
       redis:
         condition: service_healthy
 
+  # Delivers queued emails (ADR-0011). Uses the mock provider unless LODGEOS_EMAIL_PROVIDER=smtp.
+  worker:
+    build: ./backend
+    command: ["python", "-m", "app.cli", "deliver-notifications"]
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      LODGEOS_DATABASE_URL: postgresql+asyncpg://lodgeos_app:${LODGEOS_APP_PASSWORD:-app-dev-only}@postgres:5432/lodgeos
+      LODGEOS_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
   pgdata:
   redisdata:

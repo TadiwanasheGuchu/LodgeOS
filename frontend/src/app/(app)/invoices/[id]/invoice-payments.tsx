@@ -3,6 +3,7 @@
 import { Banknote, RotateCcw, Undo2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { EmailButton } from "@/components/notifications/email-button";
 import { RecordPaymentDialog, RefundDialog, ReverseDialog } from "@/components/payments/payment-dialogs";
 import { Button } from "@/components/ui/button";
 import { formatStayDate } from "@/lib/dates";
@@ -78,6 +79,17 @@ export function InvoicePayments({
                   </Button>
                 ) : null}
               </span>
+              {canRecord && !p.reversed_at ? (
+                <span className="col-span-2 flex flex-wrap items-center gap-2 print:hidden">
+                  <EmailButton
+                    url={`/api/v1/payments/${p.id}/email-receipt`}
+                    label="Email receipt"
+                    title={`Receipt for ${fmt(p.amount)} from ${p.payer_name}`}
+                    variant="ghost"
+                    className="h-7 px-2 text-[13px]"
+                  />
+                </span>
+              ) : null}
               {p.reversed_at ? <span className="col-span-2 text-[12px] text-muted no-underline">Reversed: {p.reversal_reason}</span> : null}
               {p.refunds.map((r) => (
                 <span key={r.id} className="col-span-2 text-[12px] text-muted">

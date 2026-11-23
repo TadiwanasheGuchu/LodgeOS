@@ -130,6 +130,19 @@ async def add_member(args: argparse.Namespace, password: str | None) -> None:
         await engine.dispose()
 
 
+async def deliver_notifications(*, once: bool, interval: float) -> None:
+    from app.core.db import get_sessionmaker
+    from app.modules.notifications import service as notifications
+    from app.modules.notifications.providers import get_provider
+
+    provider = get_provider()
+    if once:
+        sent = await notifications.deliver_due(get_sessionmaker(), provider)
+        print(f"Processed {sent} notification(s) with the {provider.name} provider")
+        return
+    await notifications.run_worker(get_sessionmaker(), provider, interval)
+
+
 def _read_password(parser: argparse.ArgumentParser, prompt: str) -> str:
     password = os.environ.get("LODGEOS_BOOTSTRAP_PASSWORD") or getpass.getpass(prompt)
     if not MIN_PASSWORD_LENGTH <= len(password) <= MAX_PASSWORD_LENGTH:
@@ -156,7 +169,17 @@ def main(argv: list[str] | None = None) -> int:
     member.add_argument("--name", required=True)
     member.add_argument("--role", required=True, choices=[r.value for r in Role])
 
+    worker = sub.add_parser(
+        "deliver-notifications", help="Deliver queued emails (runs until stopped)"
+    )
+    worker.add_argument("--once", action="store_true", help="Deliver what is due, then exit")
+    worker.add_argument("--interval", type=float, default=5.0, help="Seconds between polls")
+
     args = parser.parse_args(argv)
+
+    if args.command == "deliver-notifications":
+        asyncio.run(deliver_notifications(once=args.once, interval=args.interval))
+        return 0
 
     if args.command == "add-member":
         try:

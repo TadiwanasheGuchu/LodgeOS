@@ -8,8 +8,10 @@ import { formatDateTime } from "@/lib/format";
 import { formatMoney, formatPercent } from "@/lib/money";
 import { apiGet, requireOrganisation, ServerApiError } from "@/lib/server/api";
 import { loadProperty } from "@/lib/server/properties";
-import { BOOKING_SOURCE_LABELS, RESERVATION_STATUS_LABELS, type InvoicePayments, type InvoiceSummary, type Payment, type ReservationDetail } from "@/lib/types";
+import { BOOKING_SOURCE_LABELS, RESERVATION_STATUS_LABELS, type InvoicePayments, type InvoiceSummary, type NotificationRecord, type Payment, type ReservationDetail } from "@/lib/types";
 import { InvoiceStatusChip } from "../../invoices/status";
+import { EmailButton } from "@/components/notifications/email-button";
+import { EmailLog } from "@/components/notifications/email-log";
 import { BookingPayments } from "./booking-payments";
 import { CreateInvoice } from "./create-invoice";
 import { AssignRoom } from "./assign-room";
@@ -34,6 +36,8 @@ export default async function ReservationPage({ params }: PageProps<"/reservatio
   const invoices = access.canAt("invoices.view", r.property_id)
     ? await apiGet<InvoiceSummary[]>(`/api/v1/properties/${r.property_id}/invoices?reservation_id=${r.id}`)
     : null;
+  const emails = await apiGet<NotificationRecord[]>(`/api/v1/notifications?subject_type=reservation&subject_id=${r.id}`);
+  const canConfirm = canManage && (r.status === "provisional" || r.status === "confirmed");
   const payments = access.canAt("payments.view", r.property_id)
     ? await apiGet<Payment[]>(`/api/v1/properties/${r.property_id}/payments?reservation_id=${r.id}`)
     : null;
@@ -135,6 +139,17 @@ export default async function ReservationPage({ params }: PageProps<"/reservatio
             {r.guest.phone ? <p><a href={`tel:${r.guest.phone}`} className="text-teal underline-offset-2 hover:underline">{r.guest.phone}</a></p> : null}
             <p className="mt-2 text-muted">Booked by {BOOKING_SOURCE_LABELS[r.source].toLowerCase()}</p>
             {r.notes ? <p className="mt-2 whitespace-pre-wrap">{r.notes}</p> : null}
+            {canConfirm ? (
+              <div className="mt-3 flex flex-col items-start gap-1">
+                <EmailButton
+                  url={`/api/v1/reservations/${r.id}/email-confirmation`}
+                  label={r.status === "provisional" ? "Email booking request" : "Email confirmation"}
+                  title={r.status === "provisional" ? "Email the booking request" : "Email the booking confirmation"}
+                  description="The guest receives the dates, rooms and total. Internal notes are never included."
+                />
+              </div>
+            ) : null}
+            <EmailLog items={emails} timezone={property.timezone} />
           </section>
 
           {invoices ? (

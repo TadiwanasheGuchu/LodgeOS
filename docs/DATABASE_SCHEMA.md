@@ -208,6 +208,12 @@ All use tenant RLS (ADR-0010).
 | `payment_allocations` | `payment_id`, `invoice_id` (composite FKs with organisation), `amount` (non-zero; negative releases), `created_by`, `created_at` | INSERT and SELECT only |
 | `refunds` | `payment_id`, `property_id`, `method`, `currency`, `amount` (> 0), `refunded_on`, `reason`, `reference`, `idempotency_key` (UNIQUE per organisation), `recorded_by`, `recorded_at` | INSERT and SELECT only |
 
+## Tables (Phase 3.5)
+
+| Table | Key columns | Notes |
+|---|---|---|
+| `notifications` | `property_id`, `channel` (email), `kind` (booking_confirmation, invoice, receipt), `subject_type`, `subject_id`, `recipient`, `sender_name`, `reply_to`, `title`, `body_text`, `body_html`, `status` (queued, sent, failed), `attempts`, `next_attempt_at`, `last_error`, `provider`, `provider_message_id`, `idempotency_key` (UNIQUE per organisation), `created_by`, `created_at`, `sent_at` | Tenant RLS plus policy `notifications_worker` for the delivery worker (`app.notification_worker = 'on'`). Partial index on due queued rows. No DELETE |
+
 ## Planned tables
 
-Next: `notifications` (3.5).
+Next (Phase 4): booking-engine sessions, guest portal access tokens, payment-gateway events (`integration_events`).

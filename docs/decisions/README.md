@@ -14,3 +14,4 @@ One file per significant decision: `NNNN-short-title.md` with Status, Context, D
 | 0008 | Reservation integrity under concurrency | Accepted |
 | 0009 | Invoices, numbering and credit notes | Accepted |
 | 0010 | Payments, allocations and refunds | Accepted |
+| 0011 | Email notifications through an outbox | Accepted |

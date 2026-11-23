@@ -48,6 +48,7 @@ const LABELS: Record<string, string> = {
   "payment.released": "Took a payment off an invoice",
   "payment.refunded": "Refunded money",
   "payment.reversed": "Reversed a payment",
+  "notification.queued": "Emailed a guest",
   "maintenance.reported": "Reported a maintenance problem",
   "maintenance.updated": "Updated a maintenance ticket",
   "maintenance.room_blocked": "Took a room out of sale",
@@ -122,6 +123,9 @@ export function describeChanges(entry: AuditLogEntry): string[] {
     if (entry.action === "payment.allocated") return [`${String(d.currency)} ${String(d.to)} to ${String(d.invoice)}`];
     if (entry.action === "payment.released") return [`${String(d.currency)} ${String(d.released)} from ${String(d.invoice)}`];
     return [d.payer ? `${amount} from ${String(d.payer)}` : amount];
+  }
+  if (entry.action === "notification.queued" && d.title) {
+    return [String(d.title)];
   }
   if (entry.action === "maintenance.reported" && d.title) {
     return [String(d.title)];

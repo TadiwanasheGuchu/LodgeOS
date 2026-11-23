@@ -6,7 +6,8 @@ import { formatStayDate, todayIn } from "@/lib/dates";
 import { formatMoney, sumMoney } from "@/lib/money";
 import { apiGet, requireOrganisation, ServerApiError } from "@/lib/server/api";
 import { loadProperty } from "@/lib/server/properties";
-import type { Invoice, InvoicePayments as Money, Tax } from "@/lib/types";
+import { EmailLog } from "@/components/notifications/email-log";
+import type { Invoice, InvoicePayments as Money, NotificationRecord, Tax } from "@/lib/types";
 import { InvoicePayments } from "./invoice-payments";
 import { InvoiceStatusChip } from "../status";
 import { InvoiceActions } from "./invoice-actions";
@@ -35,7 +36,11 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
     inv.status === "issued" && access.canAt("payments.view", inv.property_id)
       ? await apiGet<Money>(`/api/v1/invoices/${inv.id}/payments`)
       : null;
-  const property = payments ? await loadProperty(inv.property_id) : null;
+  const property = await loadProperty(inv.property_id);
+  const emails =
+    inv.status === "issued"
+      ? await apiGet<NotificationRecord[]>(`/api/v1/notifications?subject_type=invoice&subject_id=${inv.id}`)
+      : [];
   const money = (a: string) => formatMoney(a, inv.currency);
   const balance = sumMoney([inv.total, `-${inv.credited}`]);
   const title = inv.status === "draft" ? "Draft invoice" : inv.seller.tax_number ? "Tax invoice" : "Invoice";
@@ -167,6 +172,12 @@ export default async function InvoicePage({ params }: PageProps<"/invoices/[id]"
 
       <aside className="w-full shrink-0 xl:sticky xl:top-20 xl:w-72 print:hidden">
         <InvoiceActions invoice={inv} taxes={taxes} canManage={canManage} canCredit={canCredit} balance={balance} />
+        {emails.length > 0 ? (
+          <div className="mt-3 rounded-lg border border-line bg-white p-4">
+            <h2 className="text-sm font-semibold text-forest">Emails</h2>
+            <EmailLog items={emails} timezone={property.timezone} />
+          </div>
+        ) : null}
       </aside>
     </div>
   );
