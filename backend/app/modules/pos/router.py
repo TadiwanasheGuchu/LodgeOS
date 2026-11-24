@@ -314,7 +314,9 @@ async def _sale_out(db: DB, orders: list[PosOrder]) -> list[SaleOut]:
             room_label = ", ".join(numbers) or None
         items = (
             await db.scalars(
-                select(PosOrderItem).where(PosOrderItem.order_id == o.id).order_by(PosOrderItem.position)
+                select(PosOrderItem)
+                .where(PosOrderItem.order_id == o.id)
+                .order_by(PosOrderItem.position)
             )
         ).all()
         out.append(
