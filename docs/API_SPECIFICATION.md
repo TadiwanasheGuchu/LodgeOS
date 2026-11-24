@@ -228,6 +228,20 @@ ADR-0014. Uploads are raw request bodies with an `image/*` content type (max 8 M
 
 `GET /api/v1/public/properties/{org}/{property}` adds `logo`, `photos` and each room type's `photos` (`{alt, urls, widths}`).
 
+## Endpoints (Phase 5.1): point of sale
+
+ADR-0015. Sales are settled when rung up and never edited; corrections go through the invoice.
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| GET, POST | `/api/v1/properties/{id}/pos/outlets` | `pos.sell` / `pos.manage` | Outlets (Bar, Restaurant, Curio shop) |
+| PATCH | `/api/v1/pos/outlets/{id}` | `pos.manage` | Rename, close or reopen |
+| GET, POST | `/api/v1/properties/{id}/pos/items` | `pos.sell` / `pos.manage` | Items: outlet, name, category, price, whether it includes tax, which taxes apply |
+| PATCH | `/api/v1/pos/items/{id}` | `pos.manage` | Change or stop selling (archive) |
+| GET | `/api/v1/properties/{id}/pos/in-house` | `pos.sell` | Checked-in bookings with room numbers, for room charges |
+| POST | `/api/v1/properties/{id}/pos/sales` | `pos.sell` | `{outlet_id, lines[{service_id, quantity}], settlement: room\|paid, reservation_id?, method?, payer_name?, note?, idempotency_key}`. Room: lines go on the checked-in booking's draft folio (created with the stay if needed). Paid: an invoice is issued and the payment recorded and allocated |
+| GET | `/api/v1/properties/{id}/pos/sales?day` | `pos.sell` | The day's sales with items, room or invoice number, and seller |
+
 ## Role permissions
 
 Defaults of the six system roles (organisation-wide grants). A role granted for one property applies its `properties.*`, `rooms.*`, `rates.*`, `reservations.*`, `invoices.*` and `payments.*` permissions to that property only.
@@ -255,3 +269,5 @@ Defaults of the six system roles (organisation-wide grants). A role granted for 
 | payments.view | ✓ | ✓ | ✓ | | | ✓ |
 | payments.manage | ✓ | ✓ | ✓ | | | ✓ |
 | payments.refund | ✓ | ✓ | | | | ✓ |
+| pos.sell | ✓ | ✓ | ✓ | | | |
+| pos.manage | ✓ | ✓ | | | | |

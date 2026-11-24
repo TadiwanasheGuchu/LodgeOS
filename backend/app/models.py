@@ -24,6 +24,7 @@ from app.modules.media.models import MediaAsset
 from app.modules.notifications.models import Notification
 from app.modules.organisations.models import Organisation, OrganisationUser
 from app.modules.payments.models import Payment, PaymentAllocation, Refund
+from app.modules.pos.models import PosOrder, PosOrderItem, PosOutlet, Service
 from app.modules.properties.models import Building, Property
 from app.modules.rates.models import RatePlan, RatePlanPrice, SeasonalRate, Tax
 from app.modules.reservations.models import Reservation, ReservationRoom, ReservationStatusChange
@@ -49,6 +50,9 @@ __all__ = [
     "Payment",
     "PaymentAllocation",
     "PermissionRecord",
+    "PosOrder",
+    "PosOrderItem",
+    "PosOutlet",
     "Property",
     "RatePlan",
     "RatePlanPrice",
@@ -62,6 +66,7 @@ __all__ = [
     "RoomBlock",
     "RoomType",
     "SeasonalRate",
+    "Service",
     "Tax",
     "User",
     "UserRole",

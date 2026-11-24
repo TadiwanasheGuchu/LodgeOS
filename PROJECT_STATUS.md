@@ -2,8 +2,31 @@
 
 _Last updated: 2026-11-23_
 
-**Current phase:** 4 — Booking commerce
+**Current phase:** 4 — Booking commerce (4.3 waits on a gateway); 5 — Advanced hospitality started
 **Current milestone:** 4.4 complete (photos and logo); 4.3 waits on the payment gateway
+
+## Phase 5 plan
+
+| Milestone | Scope | Status |
+|---|---|---|
+| 5.1 | Point of sale: outlets and items, charge to room (folio) or pay now, idempotent sales | ✅ Done |
+| 5.2 | Activities and bookable services (game drives, transfers) with capacity | Planned |
+| 5.3 | Reports: occupancy, ADR, RevPAR, revenue by source and outlet | Planned |
+| 5.4 | SaaS subscriptions and plan limits | Planned |
+| 5.5 | Channel manager connection | Needs a partner agreement |
+
+## Phase 5.1 acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| Charging to a room needs a checked-in guest and adds lines to one draft folio per booking, with the stay | ✅ Tested |
+| Paying now issues an invoice and records and allocates the payment; it appears in the cash-up | ✅ Tested |
+| Lines use the property's taxes with the ADR-0007 rule; a retried sale is recorded once | ✅ Tested |
+| Items must be active and sold at the chosen outlet; sales cannot be changed in the database | ✅ Tested |
+| Front desk sells, only managers change the catalogue; housekeeping has no access; other tenants get 404 | ✅ Tested |
+| Tablet till: tap items, basket, room or payment, today's sales | ✅ Tested (E2E) |
+
+Backend **178 passed**; frontend unit **17 passed**; end-to-end **36 passed**.
 
 ## Phase 4 plan
 

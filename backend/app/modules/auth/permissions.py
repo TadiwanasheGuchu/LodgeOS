@@ -32,6 +32,8 @@ class Permission(enum.StrEnum):
     PAYMENTS_VIEW = "payments.view"
     PAYMENTS_MANAGE = "payments.manage"
     PAYMENTS_REFUND = "payments.refund"
+    POS_SELL = "pos.sell"
+    POS_MANAGE = "pos.manage"
 
 
 # Permissions about a property's setup and rooms. When a role is granted for one property,
@@ -40,7 +42,7 @@ PROPERTY_PERMISSIONS: frozenset[Permission] = frozenset(
     p
     for p in Permission
     if p.value.startswith(
-        ("properties.", "rooms.", "rates.", "reservations.", "invoices.", "payments.")
+        ("properties.", "rooms.", "rates.", "reservations.", "invoices.", "payments.", "pos.")
     )
 )
 
@@ -73,6 +75,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
             Permission.PAYMENTS_VIEW,
             Permission.PAYMENTS_MANAGE,
             Permission.PAYMENTS_REFUND,
+            Permission.POS_SELL,
+            Permission.POS_MANAGE,
         }
     ),
     # Front desk marks rooms clean after a quick check and reports faults, but does not
@@ -90,6 +94,7 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
             Permission.INVOICES_MANAGE,
             Permission.PAYMENTS_VIEW,
             Permission.PAYMENTS_MANAGE,
+            Permission.POS_SELL,
         }
     ),
     Role.HOUSEKEEPING: frozenset(

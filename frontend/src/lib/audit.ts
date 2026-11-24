@@ -54,6 +54,7 @@ const LABELS: Record<string, string> = {
   "reservation.guest_updated": "Guest sent arrival details",
   "reservation.cancellation_requested": "Guest asked to cancel",
   "reservation.cancellation_request_dismissed": "Kept a booking after a cancellation request",
+  "pos.sale": "Rang up a sale",
   "maintenance.reported": "Reported a maintenance problem",
   "maintenance.updated": "Updated a maintenance ticket",
   "maintenance.room_blocked": "Took a room out of sale",

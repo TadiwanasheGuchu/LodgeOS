@@ -234,6 +234,15 @@ All use tenant RLS (ADR-0010).
 |---|---|---|
 | `media_assets` | `property_id`, `room_type_id` (composite FK), `kind` (logo, property_photo, room_type_photo), `alt_text` (required except logos), `sort_order`, `variants` (JSONB: width, height, bytes per size), `storage` (local, s3), `created_by`, `created_at`, `deleted_at` | Tenant RLS; partial index on live assets. Files live in object storage under `{organisation}/{asset}/{size}.webp` |
 
+## Tables (Phase 5.1)
+
+| Table | Key columns | Notes |
+|---|---|---|
+| `pos_outlets` | `property_id`, `name` (UNIQUE per property), `status` | Tenant RLS |
+| `services` | `outlet_id` (composite FK), `name`, `category`, `price` (> 0), `prices_include_tax`, `tax_ids` (JSONB), `sort_order`, `status` | Tenant RLS; archived, never deleted |
+| `pos_orders` | `outlet_id`, `settlement` (room, paid), `reservation_id`, `invoice_id`, `payment_id`, `currency`, `total`, `note`, `idempotency_key` (UNIQUE per organisation), `created_by`, `created_at` | INSERT and SELECT only; CHECK: room ⇔ booking, paid ⇔ payment |
+| `pos_order_items` | `order_id`, `service_id`, `position`, `name`, `quantity`, `unit_amount`, `total` | INSERT and SELECT only |
+
 ## Planned tables
 
 Next (Phase 4): booking-engine sessions, guest portal access tokens, payment-gateway events (`integration_events`).

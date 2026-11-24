@@ -21,7 +21,9 @@ export type Permission =
   | "invoices.credit"
   | "payments.view"
   | "payments.manage"
-  | "payments.refund";
+  | "payments.refund"
+  | "pos.sell"
+  | "pos.manage";
 
 export type Role =
   | "owner"
@@ -778,4 +780,45 @@ export interface PublicImage {
   alt: string;
   urls: Record<string, string>;
   widths: Record<string, number>;
+}
+
+export interface PosOutlet {
+  id: string;
+  name: string;
+  status: "active" | "archived";
+}
+
+export interface PosItem {
+  id: string;
+  outlet_id: string;
+  name: string;
+  category: string | null;
+  price: string;
+  prices_include_tax: boolean;
+  tax_ids: string[];
+  sort_order: number;
+  status: "active" | "archived";
+}
+
+export interface PosSale {
+  id: string;
+  outlet: string;
+  settlement: "room" | "paid";
+  reservation_reference: string | null;
+  room_label: string | null;
+  invoice_id: string;
+  invoice_number: string | null;
+  currency: string;
+  total: string;
+  items: { name: string; quantity: string; unit_amount: string; total: string }[];
+  sold_by: string;
+  created_at: string;
+}
+
+export interface InHouseGuest {
+  reservation_id: string;
+  reference: string;
+  guest_name: string;
+  rooms: string[];
+  check_out: string;
 }
