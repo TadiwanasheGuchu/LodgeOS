@@ -39,6 +39,11 @@ async def bootstrap_organisation(args: argparse.Namespace, password: str) -> Non
     engine = create_async_engine(get_settings().migration_database_url.get_secret_value())
     try:
         async with async_sessionmaker(engine)() as db, db.begin():
+            if getattr(args, "if_empty", False) and await db.scalar(
+                select(func.count()).select_from(Organisation)
+            ):
+                print("An organisation already exists; nothing to do.")
+                return
             email = args.owner_email.strip().lower()
             user = await db.scalar(select(User).where(func.lower(User.email) == email))
             if user is None:
@@ -162,6 +167,11 @@ def main(argv: list[str] | None = None) -> int:
     boot.add_argument("--country", help="ISO 3166-1 alpha-2, e.g. NA")
     boot.add_argument("--owner-email", required=True)
     boot.add_argument("--owner-name", required=True)
+    boot.add_argument(
+        "--if-empty",
+        action="store_true",
+        help="Do nothing when any organisation exists (for first start on a new host)",
+    )
 
     member = sub.add_parser("add-member", help="Add a user to an organisation with a role")
     member.add_argument("--org", required=True, help="Organisation slug")

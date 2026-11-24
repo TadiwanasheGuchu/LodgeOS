@@ -85,3 +85,19 @@ async def test_cli_rejects_invalid_input() -> None:
         "--owner-email", "a@b.example.com", password="short",
     )  # fmt: skip
     assert r.returncode == 2
+
+
+async def test_bootstrap_if_empty_runs_once(owner_engine: AsyncEngine) -> None:
+    """The free-hosting start script bootstraps on every start; only the first one creates."""
+    args = (
+        "bootstrap-organisation", "--if-empty", "--name", "Demo Lodge", "--slug", "demo-lodge",
+        "--currency", "NAD", "--timezone", "Africa/Windhoek", "--country", "NA",
+        "--owner-email", "owner@demo-lodge.example.com", "--owner-name", "Demo Owner",
+    )  # fmt: skip
+    first = await _cli(*args)
+    assert first.returncode == 0, first.stderr
+    again = await _cli(*args)
+    assert again.returncode == 0, again.stderr
+    assert "already exists; nothing to do" in again.stdout
+    async with owner_engine.connect() as conn:
+        assert (await conn.execute(text("SELECT count(*) FROM organisations"))).scalar() == 1

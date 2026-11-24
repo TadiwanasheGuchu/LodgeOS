@@ -1,0 +1,55 @@
+# Render Blueprint for a free LodgeOS demo (docs/DEPLOYMENT.md → "Free hosting").
+# Database: Neon (free, does not expire). Redis: Upstash (free). Secrets marked
+# `sync: false` are entered in the Render dashboard, never committed.
+services:
+  - type: web
+    name: lodgeos-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    dockerCommand: sh deploy/start.sh
+    healthCheckPath: /health/ready
+    envVars:
+      - key: LODGEOS_ENVIRONMENT
+        value: staging
+      - key: LODGEOS_RUN_WORKER_IN_API
+        value: "true"
+      - key: LODGEOS_COOKIE_SECURE
+        value: "true"
+      - key: LODGEOS_DATABASE_URL # Neon, lodgeos_app role, ?ssl=require
+        sync: false
+      - key: LODGEOS_MIGRATION_DATABASE_URL # Neon, lodgeos_owner role, ?ssl=require
+        sync: false
+      - key: LODGEOS_REDIS_URL # Upstash, rediss://...
+        sync: false
+      - key: LODGEOS_PUBLIC_BASE_URL # https://lodgeos-web.onrender.com
+        sync: false
+      - key: LODGEOS_CORS_ALLOWED_ORIGINS # same as LODGEOS_PUBLIC_BASE_URL
+        sync: false
+      - key: LODGEOS_BOOTSTRAP_ORG_NAME
+        sync: false
+      - key: LODGEOS_BOOTSTRAP_ORG_SLUG
+        sync: false
+      - key: LODGEOS_BOOTSTRAP_OWNER_NAME
+        sync: false
+      - key: LODGEOS_BOOTSTRAP_OWNER_EMAIL
+        sync: false
+      - key: LODGEOS_BOOTSTRAP_PASSWORD # first sign-in password; change it after
+        sync: false
+
+  - type: web
+    name: lodgeos-web
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start -- --port $PORT
+    healthCheckPath: /sign-in
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: LODGEOS_API_ORIGIN # https://lodgeos-api.onrender.com
+        sync: false

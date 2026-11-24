@@ -5,6 +5,10 @@ _Last updated: 2026-11-23_
 **Current phase:** 4 — Booking commerce (4.3 waits on a gateway); 5 — Advanced hospitality started
 **Current milestone:** 4.4 complete (photos and logo); 4.3 waits on the payment gateway
 
+## Hosting
+
+Free demo hosting is prepared (ADR-0016, `render.yaml`, `infra/neon/setup.sql`, guide in `docs/DEPLOYMENT.md` → "Free hosting"): Render for the web app and API, Neon for Postgres, Upstash for Redis. Rehearsed locally on a Neon-like database. Needs the product owner's accounts to go live. Not production: no backups, sleeping services, test-mode email.
+
 ## Phase 5 plan
 
 | Milestone | Scope | Status |
