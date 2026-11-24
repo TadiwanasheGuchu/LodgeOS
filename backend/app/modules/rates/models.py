@@ -19,6 +19,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -111,6 +112,10 @@ class RatePlan(TimestampMixin, Base):
     # prices keep their currency if the property's currency changes later.
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     prices_include_tax: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # Offered on the public booking engine (ADR-0012). Private and corporate plans stay off.
+    sell_online: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     min_stay_nights: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     max_stay_nights: Mapped[int | None] = mapped_column(Integer)
     # Optional window of stay dates (for promotions); NULL means always.

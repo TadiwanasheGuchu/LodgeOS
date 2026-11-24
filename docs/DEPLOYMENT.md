@@ -66,11 +66,11 @@ docker run --rm -e LODGEOS_MIGRATION_DATABASE_URL=... lodgeos-api alembic upgrad
 
 ## Email worker
 
-Emails are written to the `notifications` outbox by the API and delivered by a separate process (ADR-0011). In Compose it is the `worker` service; elsewhere run:
+The worker delivers emails from the `notifications` outbox (ADR-0011) and cancels website booking requests whose hold has expired (ADR-0012). In Compose it is the `worker` service; elsewhere run:
 
 ```bash
-python -m app.cli deliver-notifications            # runs until stopped, polls every 5 s
-python -m app.cli deliver-notifications --once     # deliver what is due, then exit
+python -m app.cli run-worker            # runs until stopped, polls every 5 s
+python -m app.cli run-worker --once     # do what is due, then exit
 ```
 
 The worker needs only `LODGEOS_DATABASE_URL` (the `lodgeos_app` role) and `LODGEOS_REDIS_URL`. Provider settings:

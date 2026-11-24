@@ -130,17 +130,17 @@ async def add_member(args: argparse.Namespace, password: str | None) -> None:
         await engine.dispose()
 
 
-async def deliver_notifications(*, once: bool, interval: float) -> None:
+async def run_worker(*, once: bool, interval: float) -> None:
     from app.core.db import get_sessionmaker
-    from app.modules.notifications import service as notifications
     from app.modules.notifications.providers import get_provider
+    from app.worker import run_forever, run_once
 
     provider = get_provider()
     if once:
-        sent = await notifications.deliver_due(get_sessionmaker(), provider)
-        print(f"Processed {sent} notification(s) with the {provider.name} provider")
+        expired, sent = await run_once(get_sessionmaker(), provider)
+        print(f"Expired {expired} booking hold(s); processed {sent} email(s) with {provider.name}")
         return
-    await notifications.run_worker(get_sessionmaker(), provider, interval)
+    await run_forever(get_sessionmaker(), provider, interval)
 
 
 def _read_password(parser: argparse.ArgumentParser, prompt: str) -> str:
@@ -170,15 +170,17 @@ def main(argv: list[str] | None = None) -> int:
     member.add_argument("--role", required=True, choices=[r.value for r in Role])
 
     worker = sub.add_parser(
-        "deliver-notifications", help="Deliver queued emails (runs until stopped)"
+        "run-worker",
+        aliases=["deliver-notifications"],
+        help="Deliver queued emails and expire booking holds (runs until stopped)",
     )
     worker.add_argument("--once", action="store_true", help="Deliver what is due, then exit")
     worker.add_argument("--interval", type=float, default=5.0, help="Seconds between polls")
 
     args = parser.parse_args(argv)
 
-    if args.command == "deliver-notifications":
-        asyncio.run(deliver_notifications(once=args.once, interval=args.interval))
+    if args.command in ("run-worker", "deliver-notifications"):
+        asyncio.run(run_worker(once=args.once, interval=args.interval))
         return 0
 
     if args.command == "add-member":

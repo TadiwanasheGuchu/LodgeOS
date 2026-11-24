@@ -65,25 +65,7 @@ class NotificationOut(BaseModel):
     next_attempt_at: datetime
 
 
-def _venue(prop: Property) -> templates.Venue:
-    address = [
-        line
-        for line in (
-            prop.address_line1,
-            prop.address_line2,
-            " ".join(p for p in (prop.postal_code, prop.city) if p) or None,
-            prop.region,
-        )
-        if line
-    ]
-    return templates.Venue(
-        name=prop.name,
-        address=address,
-        phone=prop.phone,
-        email=prop.email,
-        legal_name=prop.legal_name,
-        tax_number=prop.tax_number,
-    )
+_venue = service.venue_of
 
 
 def _recipient(requested: str | None, fallback: str | None) -> str:

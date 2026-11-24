@@ -169,6 +169,33 @@ async def update_property(
     ):
         if required in changes and changes[required] is None:
             raise HTTPException(status_code=422, detail=f"{required} cannot be empty.")
+    for flag in (
+        "booking_engine_enabled",
+        "booking_mode",
+        "min_lead_days",
+        "max_advance_days",
+        "request_hold_hours",
+    ):
+        if flag in changes and changes[flag] is None:
+            raise HTTPException(status_code=422, detail=f"{flag} cannot be empty.")
+    for text_field in ("public_description", "booking_terms"):
+        if text_field in changes and changes[text_field] is not None:
+            changes[text_field] = changes[text_field].strip() or None
+    enabled = changes.get("booking_engine_enabled", prop.booking_engine_enabled)
+    terms = changes.get("booking_terms", prop.booking_terms)
+    if enabled and not terms:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Add booking terms (cancellation and payment policy) before taking bookings online."
+            ),
+        )
+    lead = changes.get("min_lead_days", prop.min_lead_days)
+    advance = changes.get("max_advance_days", prop.max_advance_days)
+    if lead >= advance:
+        raise HTTPException(
+            status_code=422, detail="The latest bookable date must be after the earliest."
+        )
     diff = audit.apply_changes(prop, changes)
     if diff["after"]:
         await db.flush()

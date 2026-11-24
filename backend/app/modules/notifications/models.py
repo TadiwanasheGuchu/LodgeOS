@@ -81,8 +81,9 @@ class Notification(Base):
     provider: Mapped[str | None] = mapped_column(String(40))
     provider_message_id: Mapped[str | None] = mapped_column(String(200))
     idempotency_key: Mapped[str] = mapped_column(String(64), nullable=False)
-    created_by: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    # Empty for messages the system queues itself, e.g. after a website booking.
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT")
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

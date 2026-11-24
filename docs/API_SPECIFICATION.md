@@ -187,6 +187,18 @@ Emails go to the outbox and are delivered by the worker (ADR-0011). Each request
 | POST | `/api/v1/payments/{id}/email-receipt` | `payments.manage` | Not for reversed payments; lists the invoices it was applied to |
 | GET | `/api/v1/notifications?subject_type&subject_id` | view permission of the subject | Messages about a booking, invoice or payment: recipient, title, text body, status, attempts, last error, provider |
 
+## Endpoints (Phase 4.1): public booking engine
+
+No sign-in (ADR-0012). `{org}` and `{property}` are slugs; a property that is not enabled, archived or unknown returns 404 "This booking page is not available." The booking POST needs the CSRF cookie and header like every other unsafe request.
+
+| Method | Path | Limits | Description |
+|---|---|---|---|
+| GET | `/api/v1/public/properties/{org}/{property}` | | Name, description, address, contact, check-in/out times, currency, mode, terms, bookable window, room types (no internal data) |
+| GET | `/api/v1/public/properties/{org}/{property}/offers?check_in&check_out&adults&children` | 60/min per IP | Per room type that fits the party: rooms free on every night and the price of each rate plan marked `sell_online` |
+| POST | `/api/v1/public/properties/{org}/{property}/bookings` | 5/hour per IP, 30/hour per property | `{check_in, check_out, rooms[≤4], guest{first_name, last_name, email, phone?, country_code?}, special_requests?, accept_terms, website (honeypot, empty), idempotency_key}`. Up to 30 nights within the window. Request mode: provisional with `hold_expires_at`; instant mode: confirmed. Queues the confirmation email. 409 when the rooms were just taken |
+
+Staff settings: `PATCH /api/v1/properties/{id}` accepts `booking_engine_enabled` (needs `booking_terms`), `booking_mode` (`request`, `instant`), `public_description`, `booking_terms`, `min_lead_days`, `max_advance_days`, `request_hold_hours`. `PATCH /api/v1/rate-plans/{id}` accepts `sell_online`.
+
 ## Role permissions
 
 Defaults of the six system roles (organisation-wide grants). A role granted for one property applies its `properties.*`, `rooms.*`, `rates.*`, `reservations.*`, `invoices.*` and `payments.*` permissions to that property only.

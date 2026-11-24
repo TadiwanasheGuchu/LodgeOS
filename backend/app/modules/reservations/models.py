@@ -82,6 +82,12 @@ class Reservation(TimestampMixin, Base):
         _property_fk("reservations"),
         UniqueConstraint("organisation_id", "reference"),
         UniqueConstraint("id", "property_id", name="uq_reservations_id_property"),
+        UniqueConstraint("organisation_id", "idempotency_key", name="uq_reservations_idempotency"),
+        Index(
+            "ix_reservations_hold_expiry",
+            "hold_expires_at",
+            postgresql_where=text("status = 'provisional' AND hold_expires_at IS NOT NULL"),
+        ),
         CheckConstraint(enum_check("status", ReservationStatus), name="status"),
         CheckConstraint(enum_check("source", BookingSource), name="source"),
         CheckConstraint("check_out > check_in", name="dates"),
@@ -107,6 +113,10 @@ class Reservation(TimestampMixin, Base):
     tax_amount: Mapped[Decimal] = mapped_column(Money, nullable=False)
     notes: Mapped[str | None] = mapped_column(Text)
     cancellation_reason: Mapped[str | None] = mapped_column(String(500))
+    # Website requests hold rooms until staff confirm or this time passes (ADR-0012).
+    hold_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Set by public bookings so a double submit creates one booking.
+    idempotency_key: Mapped[str | None] = mapped_column(String(64))
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT")
     )

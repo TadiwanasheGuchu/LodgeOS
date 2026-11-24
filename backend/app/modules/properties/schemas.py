@@ -1,7 +1,7 @@
 import re
 import uuid
 from datetime import datetime, time
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -51,6 +51,15 @@ class PropertyCreate(_PropertyFields):
 
 
 class PropertyUpdate(_PropertyFields):
+    # Public booking engine (ADR-0012).
+    booking_engine_enabled: bool | None = None
+    booking_mode: Literal["request", "instant"] | None = None
+    public_description: str | None = Field(default=None, max_length=4000)
+    booking_terms: str | None = Field(default=None, max_length=8000)
+    min_lead_days: int | None = Field(default=None, ge=0, le=365)
+    max_advance_days: int | None = Field(default=None, ge=1, le=730)
+    request_hold_hours: int | None = Field(default=None, ge=1, le=336)
+
     name: str | None = Field(default=None, min_length=2, max_length=200)
     property_type: PropertyType | None = None
     status: RecordStatus | None = None
@@ -95,6 +104,13 @@ class PropertyOut(BaseModel):
     email: str | None
     legal_name: str | None
     tax_number: str | None
+    booking_engine_enabled: bool
+    booking_mode: str
+    public_description: str | None
+    booking_terms: str | None
+    min_lead_days: int
+    max_advance_days: int
+    request_hold_hours: int
     check_in_time: time
     check_out_time: time
     weekend_nights: list[int]

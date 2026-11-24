@@ -2,8 +2,36 @@
 
 _Last updated: 2026-11-23_
 
-**Current phase:** 3 — Operations and finance (complete); next is Phase 4 — Booking commerce
-**Current milestone:** 3.5 complete (email notifications). Phase 3 complete
+**Current phase:** 4 — Booking commerce
+**Current milestone:** 4.1 complete (public booking engine)
+
+## Phase 4 plan
+
+| Milestone | Scope | Status |
+|---|---|---|
+| 4.1 | Public booking engine per property: availability and prices for online rates, request or instant booking, expiring holds, automatic confirmation email, staff settings | ✅ Done |
+| 4.2 | Guest portal: view and manage a booking with a secure link (no account), pre-arrival details | Planned |
+| 4.3 | Payment gateway adapter (provider to be chosen): deposits on the booking engine, webhook idempotency, reconciliation with ADR-0010 payments | Blocked on provider choice |
+| 4.4 | Property branding (logo, photos) with S3-compatible storage; automatic confirmations for staff bookings | Planned |
+
+## Phase 4.1 acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| Only enabled, active properties of active organisations are public; slugs must belong together; archiving takes the page offline | ✅ Tested |
+| Public requests run under the property's organisation RLS context with no user; only ids cross tenants, through two minimal SECURITY DEFINER functions | ✅ Tested |
+| Offers list only rates marked for online sale, rooms free on every night, and parties that fit the room type | ✅ Tested |
+| Request mode holds rooms as provisional and cancels unconfirmed requests when the hold expires (rooms freed, reason recorded); confirmed requests never expire | ✅ Tested |
+| Instant mode confirms at once | ✅ Tested |
+| Abuse controls: rate limits per IP and property, honeypot, terms acceptance, 30-night and window limits, idempotent submits, private rates not bookable by id | ✅ Tested |
+| Guest gets a confirmation email; staff see a website booking with the guest's request; internal data never exposed | ✅ Tested |
+| Booking page works on a phone without horizontal scrolling | ✅ Tested (E2E at 390 px) and screenshots |
+
+## Test results (milestone 4.1)
+
+- Backend: **160 passed, 0 failed** (6 new). Lint, types, migration round trip clean.
+- Frontend unit and component: **17 passed**. End-to-end: **33 passed** (new: owner turns on online booking, terms required, marks a rate for online sale; an anonymous guest books from a phone and gets a reference).
+- Not yet done: online payment (4.3), room photos and branding (4.4), multi-room selection in the public UI (the API accepts up to 4 rooms), promo codes, children's ages.
 
 ## Phase 3 plan
 
@@ -250,5 +278,5 @@ See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no password reset, no
 
 ## Next
 
-1. Phase 4 plan: public booking engine per property (availability, pricing, provisional booking with deposit), guest portal, payment gateway adapter (provider to be chosen), property branding, automatic confirmations.
+1. Milestone 4.2: guest portal (secure link per booking).
 2. Decisions needed from the product owner: email provider (any with SMTP), payment gateway for Namibia/Zimbabwe, and whether invoice numbering should be per property (separate legal entities) or per organisation (current).
