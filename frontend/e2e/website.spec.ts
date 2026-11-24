@@ -133,3 +133,73 @@ test("staff share a guest link; the guest sends arrival details and asks to canc
   await page.goto(new URL(link).pathname);
   await expect(page.getByText("This link has expired or was withdrawn. Please contact the property.")).toBeVisible();
 });
+
+test("bar: manager adds items; front desk charges a guest's room and takes a cash sale", async ({ page }) => {
+  await signedIn(page, seed.owner);
+  await page.goto("/pos");
+  const prop = page.getByRole("navigation", { name: "Property" }).getByRole("link", { name: propertyName });
+  if (await prop.count()) await page.goto((await prop.getAttribute("href"))!);
+  await page.getByRole("navigation", { name: "Point of sale" }).getByRole("link", { name: "Items" }).click();
+  await page.getByLabel("New outlet").fill("Bar");
+  await page.getByRole("button", { name: "Add outlet" }).click();
+  await expect(page.getByText("Outlet added.")).toBeVisible();
+  await page.getByLabel("Category (optional)").fill("Beer");
+  await page.getByLabel("Item", { exact: true }).fill("Windhoek Lager");
+  await page.getByLabel(/^Price/).fill("45");
+  await page.getByRole("button", { name: "Add item" }).click();
+  await expect(page.getByRole("region", { name: "Bar items" })).toContainText("Windhoek Lager");
+
+  // Front desk: a guest arrives today and is checked in.
+  await page.context().clearCookies();
+  await signedIn(page, seed.receptionist);
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Windhoek" }).format(new Date());
+  const tomorrow = new Date(Date.parse(`${today}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+  await page.goto("/reservations");
+  await page.getByRole("navigation", { name: "Property" }).getByRole("link", { name: propertyName }).click();
+  await expect(page.getByText(new RegExp(`^${propertyName} · stays from`))).toBeVisible();
+  await page.getByRole("link", { name: "New booking" }).click();
+  await expect(page.getByText(propertyName, { exact: true })).toBeVisible();
+  await page.getByLabel("Arrival").fill(today);
+  await page.getByLabel("Departure").fill(tomorrow);
+  await page.getByRole("button", { name: "Add a Chalet" }).click();
+  await page.getByLabel("First name").fill("Ndapandula");
+  await page.getByLabel("Last name").fill(`Kalenga ${seed.run}`);
+  await page.getByRole("button", { name: /^Book/ }).click();
+  await expect(page.getByRole("heading", { name: /^LOS-/ })).toBeVisible();
+  const booking = page.url();
+  await page.getByRole("button", { name: "Assign room for Chalet" }).click();
+  const picker = page.getByLabel("Room for Chalet");
+  const roomOption = picker.locator("option").filter({ hasText: /^Room \d+ ·/ }).first();
+  const roomNumber = (await roomOption.textContent())!.match(/^Room (\d+)/)![1];
+  await picker.selectOption((await roomOption.getAttribute("value"))!);
+  await page.getByRole("button", { name: "Assign", exact: true }).click();
+  await page.getByRole("button", { name: "Check in" }).click();
+  await expect(page.getByText("Checked in", { exact: true }).first()).toBeVisible();
+
+  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Point of sale" }).click();
+  await expect(page.getByRole("heading", { name: "Point of sale", level: 1 })).toBeVisible();
+  const posProp = page.getByRole("navigation", { name: "Property" }).getByRole("link", { name: propertyName });
+  if (await posProp.count()) await page.goto((await posProp.getAttribute("href"))!);
+  const beer = page.getByRole("region", { name: "Items" }).getByRole("button", { name: /Windhoek Lager/ });
+  await beer.click();
+  await beer.click();
+  const basket = page.getByRole("complementary", { name: "Basket" });
+  await expect(basket).toContainText(/Total\s*NAD\s90\.00/);
+  const roomPicker = basket.getByLabel("Room", { exact: true });
+  const guestOption = roomPicker.locator("option").filter({ hasText: new RegExp(`^Room ${roomNumber} · Ndapandula`) });
+  await roomPicker.selectOption((await guestOption.getAttribute("value"))!);
+  await basket.getByRole("button", { name: "Charge to room" }).click();
+  await expect(basket).toContainText(`NAD 90.00 charged to room ${roomNumber}.`);
+
+  await beer.click();
+  await basket.getByText("Paid now").click();
+  await basket.getByLabel("Paid by").selectOption("cash");
+  await basket.getByRole("button", { name: "Take payment" }).click();
+  await expect(basket).toContainText(/NAD 45\.00 paid by cash \(INV-\d{6}\)\./);
+  await expect(page.getByRole("region", { name: "Today's sales" }).getByRole("listitem")).toHaveCount(2);
+
+  // The room charge is on the guest's bill.
+  await page.goto(booking);
+  await page.getByRole("region", { name: "Invoices" }).getByRole("link", { name: "Draft" }).click();
+  await expect(page.getByRole("article")).toContainText("Bar: Windhoek Lager");
+});

@@ -15,8 +15,9 @@ export default function globalSetup() {
       stdio: "pipe",
     });
 
-  // Each run signs in many times from 127.0.0.1. Clear only the sign-in throttle counters,
-  // so back-to-back local runs are not refused by the (intended) 50-per-15-minutes IP limit.
+  // Each run signs in and books many times from 127.0.0.1. Clear only the rate-limit counters
+  // (sign-in, public booking, guest portal), so back-to-back local runs are not refused by the
+  // intended per-IP limits.
   execFileSync(
     "uv",
     [
@@ -25,7 +26,7 @@ export default function globalSetup() {
       "-c",
       "import asyncio\nfrom app.core.redis import get_redis\n"
         + "async def main():\n    r = get_redis()\n"
-        + "    async for k in r.scan_iter('login:*'):\n        await r.delete(k)\n    await r.aclose()\n"
+        + "    for pattern in ('login:*', 'public:*', 'portal:*', 'portal-update:*'):\n        async for k in r.scan_iter(pattern):\n            await r.delete(k)\n    await r.aclose()\n"
         + "asyncio.run(main())",
     ],
     { cwd: backend, stdio: "pipe" },

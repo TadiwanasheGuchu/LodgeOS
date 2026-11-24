@@ -24,6 +24,7 @@ from app.modules.media.router import router as media_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.organisations.router import router as organisation_router
 from app.modules.payments.router import router as payments_router
+from app.modules.pos.router import router as pos_router
 from app.modules.properties.router import router as properties_router
 from app.modules.rates.router import router as rates_router
 from app.modules.reservations.router import router as reservations_router
@@ -109,6 +110,7 @@ def create_app() -> FastAPI:
     app.include_router(booking_engine_router)
     app.include_router(guest_portal_router)
     app.include_router(media_router)
+    app.include_router(pos_router)
     return app
 
 

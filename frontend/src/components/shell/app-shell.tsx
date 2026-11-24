@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, Banknote, BedDouble, Building2, CalendarDays, CalendarRange, History, LayoutGrid, Menu, ReceiptText, Settings2, Sparkles, Users, Wrench, X } from "lucide-react";
+import { ArrowLeftRight, Banknote, BedDouble, Building2, CalendarDays, CalendarRange, History, LayoutGrid, Menu, ReceiptText, Settings2, ShoppingBasket, Sparkles, Users, Wrench, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -24,6 +24,7 @@ const ICONS: Record<NavIcon, typeof LayoutGrid> = {
   housekeeping: Sparkles,
   invoices: ReceiptText,
   payments: Banknote,
+  pos: ShoppingBasket,
 };
 
 type ActiveMe = Me & { active_organisation: NonNullable<Me["active_organisation"]> };
