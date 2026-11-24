@@ -19,3 +19,4 @@ One file per significant decision: `NNNN-short-title.md` with Status, Context, D
 | 0013 | Guest portal through secret links | Accepted |
 | 0014 | Photos and logos in S3-compatible storage | Accepted |
 | 0015 | Point of sale on top of invoices and payments | Accepted |
+| 0016 | Free hosting for demos and pilots | Accepted |

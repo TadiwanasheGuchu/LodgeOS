@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     s3_access_key_id: str | None = None
     s3_secret_access_key: SecretStr | None = None
 
+    # Run the background worker (emails, booking holds) inside the API process. For hosts
+    # without a separate worker service, such as free plans; production runs it separately.
+    run_worker_in_api: bool = False
+
     # Where guests open links from emails (booking pages, guest portal).
     public_base_url: str = "http://localhost:3000"
 

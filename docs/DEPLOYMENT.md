@@ -97,6 +97,41 @@ ADR-0014. Development writes to `backend/var/media` (ignored by git). Production
 | `LODGEOS_S3_REGION` | `af-south-1` | |
 | `LODGEOS_S3_ACCESS_KEY_ID`, `LODGEOS_S3_SECRET_ACCESS_KEY` | none | Secret store only; a key limited to this bucket |
 
+## Free hosting (demo or pilot)
+
+ADR-0016 explains the choices and limits. You need free accounts at **Neon**, **Upstash** and **Render** (all can be opened with GitHub). About 30 minutes. Never paste passwords or connection strings into chat, issues or commits; they go only into the providers' dashboards.
+
+1. **Get the code onto `main`.** Render deploys from the repository's `main` branch, so merge the open pull requests first.
+2. **Database (Neon).**
+   - Create a project in the region **AWS Europe (Frankfurt)**.
+   - Open the **SQL Editor** on the `neondb` database. Paste `infra/neon/setup.sql` after replacing both passwords with long random ones, then run it.
+   - Build two connection strings from the **direct** host (the one *without* `-pooler`):
+     - `postgresql+asyncpg://lodgeos_app:APP_PASSWORD@HOST/neondb?ssl=require` (the app)
+     - `postgresql+asyncpg://lodgeos_owner:OWNER_PASSWORD@HOST/neondb?ssl=require` (migrations)
+3. **Redis (Upstash).** Create a Redis database in **eu-central-1 (Frankfurt)** and copy its `rediss://default:…@…:6379` URL.
+4. **Render.**
+   - **New → Blueprint**, then choose this repository. Render reads `render.yaml` and proposes `lodgeos-api` and `lodgeos-web`.
+   - Fill in the secret values:
+
+     | Service | Variable | Value |
+     |---|---|---|
+     | lodgeos-api | `LODGEOS_DATABASE_URL` | the `lodgeos_app` string |
+     | lodgeos-api | `LODGEOS_MIGRATION_DATABASE_URL` | the `lodgeos_owner` string |
+     | lodgeos-api | `LODGEOS_REDIS_URL` | the Upstash URL |
+     | lodgeos-api | `LODGEOS_PUBLIC_BASE_URL`, `LODGEOS_CORS_ALLOWED_ORIGINS` | the web address, e.g. `https://lodgeos-web.onrender.com` |
+     | lodgeos-api | `LODGEOS_BOOTSTRAP_ORG_NAME`, `…_ORG_SLUG`, `…_OWNER_NAME`, `…_OWNER_EMAIL`, `…_PASSWORD` | your lodge, its short name (lowercase-with-dashes), and the owner's sign-in |
+     | lodgeos-web | `LODGEOS_API_ORIGIN` | the API address, e.g. `https://lodgeos-api.onrender.com` |
+
+   - Apply. Render's addresses depend on name availability, so check both on the dashboard. If they differ, correct the three address variables and redeploy the web service (its API address is fixed at build time).
+5. **First sign-in.** Open the web address and sign in with the owner email and password. The first start applies the migrations and creates the organisation, once. Then delete `LODGEOS_BOOTSTRAP_PASSWORD` from Render.
+6. **Updates.** Every push to `main` redeploys both services; migrations run on the API's start.
+
+What to expect on free plans:
+- the first visit after a quiet spell takes about a minute;
+- emails run in test mode;
+- uploaded photos vanish on redeploy unless S3 storage is configured;
+- use test data only.
+
 ## Production checklist (to be completed in Phase 6)
 
 - Choose S3-compatible storage, create a private bucket and a key limited to it, and upload one photo end to end before go-live.

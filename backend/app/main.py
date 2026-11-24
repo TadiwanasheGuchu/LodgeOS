@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -35,7 +37,18 @@ log = structlog.get_logger()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    worker: asyncio.Task[None] | None = None
+    if get_settings().run_worker_in_api:
+        from app.modules.notifications.providers import get_provider
+        from app.worker import run_forever
+
+        worker = asyncio.create_task(run_forever(get_sessionmaker(), get_provider(), 15.0))
+        log.info("worker.in_api_started")
     yield
+    if worker is not None:
+        worker.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await worker
     await dispose_engine()
     await close_redis()
 
