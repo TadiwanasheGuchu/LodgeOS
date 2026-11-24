@@ -77,3 +77,20 @@ export async function api<T = void>(
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
+
+/** Upload an image file as the raw request body (ADR-0014). */
+export async function uploadImage<T>(path: string, file: File): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      method: "POST",
+      headers: { accept: "application/json", [CSRF_HEADER]: await csrfToken(), "content-type": file.type || "application/octet-stream" },
+      credentials: "same-origin",
+      body: file,
+    });
+  } catch {
+    throw new ApiError(0, "The upload did not complete. Check your connection and try again.");
+  }
+  if (!res.ok) throw await toError(res);
+  return (await res.json()) as T;
+}

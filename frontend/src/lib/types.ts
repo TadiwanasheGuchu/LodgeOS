@@ -718,7 +718,9 @@ export interface PublicProperty {
   today: string;
   earliest_arrival: string;
   latest_arrival: string;
-  room_types: { id: string; name: string; description: string | null; bed_configuration: string | null; max_occupancy: number; max_adults: number; max_children: number }[];
+  room_types: { id: string; name: string; description: string | null; bed_configuration: string | null; max_occupancy: number; max_adults: number; max_children: number; photos: PublicImage[] }[];
+  logo: PublicImage | null;
+  photos: PublicImage[];
 }
 
 export interface RoomTypeOffers {
@@ -760,4 +762,20 @@ export interface PortalBooking {
   cancellation_requested: boolean;
   cancellation_reason: string | null;
   can_update: boolean;
+}
+
+export interface MediaAsset {
+  id: string;
+  kind: "logo" | "property_photo" | "room_type_photo";
+  room_type_id: string | null;
+  alt_text: string | null;
+  sort_order: number;
+  urls: Record<string, string>;
+  widths: Record<string, number>;
+}
+
+export interface PublicImage {
+  alt: string;
+  urls: Record<string, string>;
+  widths: Record<string, number>;
 }

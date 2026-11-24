@@ -228,6 +228,12 @@ All use tenant RLS (ADR-0010).
 - `reservations`: `guest_arrival_time` (CHECK `HH:MM`), `guest_message`, `guest_updated_at`, `cancellation_requested_at`, `cancellation_request_reason`.
 - Function `guest_portal_access(hash)`: `SECURITY DEFINER`, returns organisation and reservation ids for a valid, unrevoked, unexpired token only.
 
+## Tables (Phase 4.4)
+
+| Table | Key columns | Notes |
+|---|---|---|
+| `media_assets` | `property_id`, `room_type_id` (composite FK), `kind` (logo, property_photo, room_type_photo), `alt_text` (required except logos), `sort_order`, `variants` (JSONB: width, height, bytes per size), `storage` (local, s3), `created_by`, `created_at`, `deleted_at` | Tenant RLS; partial index on live assets. Files live in object storage under `{organisation}/{asset}/{size}.webp` |
+
 ## Planned tables
 
 Next (Phase 4): booking-engine sessions, guest portal access tokens, payment-gateway events (`integration_events`).

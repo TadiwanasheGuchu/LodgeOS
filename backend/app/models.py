@@ -20,6 +20,7 @@ from app.modules.invoicing.models import (
     InvoiceItem,
 )
 from app.modules.maintenance.models import MaintenanceTicket, RoomBlock
+from app.modules.media.models import MediaAsset
 from app.modules.notifications.models import Notification
 from app.modules.organisations.models import Organisation, OrganisationUser
 from app.modules.payments.models import Payment, PaymentAllocation, Refund
@@ -41,6 +42,7 @@ __all__ = [
     "Invoice",
     "InvoiceItem",
     "MaintenanceTicket",
+    "MediaAsset",
     "Notification",
     "Organisation",
     "OrganisationUser",

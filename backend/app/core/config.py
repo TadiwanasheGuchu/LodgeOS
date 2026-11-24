@@ -38,6 +38,15 @@ class Settings(BaseSettings):
     # Comma-separated list of origins allowed to call the API with credentials.
     cors_allowed_origins: str = "http://localhost:3000"
 
+    # Photos and logos (ADR-0014). "local" writes to a directory; "s3" uses any S3-compatible store.
+    storage_backend: Literal["local", "s3"] = "local"
+    storage_local_path: str = "var/media"
+    s3_bucket: str = "lodgeos-media"
+    s3_endpoint_url: str | None = None
+    s3_region: str = "af-south-1"
+    s3_access_key_id: str | None = None
+    s3_secret_access_key: SecretStr | None = None
+
     # Where guests open links from emails (booking pages, guest portal).
     public_base_url: str = "http://localhost:3000"
 
