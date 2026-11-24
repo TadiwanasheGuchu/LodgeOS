@@ -151,7 +151,7 @@ function AddRoomsDialog({
   return (
     <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
       <DialogContent title="Add rooms" description="Add several rooms of the same type at once.">
-        <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+        <form method="post" onSubmit={submit} noValidate className="flex flex-col gap-4">
           {error ? <Alert tone="error">{error}</Alert> : null}
           <Field
             id="room-numbers"
@@ -254,7 +254,7 @@ function EditRoomDialog({
   return (
     <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
       <DialogContent title={`Room ${room.number}`}>
-        <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+        <form method="post" onSubmit={submit} noValidate className="flex flex-col gap-4">
           {error ? <Alert tone="error">{error}</Alert> : null}
           <div className="grid grid-cols-2 gap-3">
             <Field id="edit-number" label="Number">

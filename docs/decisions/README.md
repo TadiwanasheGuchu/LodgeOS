@@ -16,3 +16,4 @@ One file per significant decision: `NNNN-short-title.md` with Status, Context, D
 | 0010 | Payments, allocations and refunds | Accepted |
 | 0011 | Email notifications through an outbox | Accepted |
 | 0012 | Public booking engine | Accepted |
+| 0013 | Guest portal through secret links | Accepted |

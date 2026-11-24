@@ -3,16 +3,33 @@
 _Last updated: 2026-11-23_
 
 **Current phase:** 4 — Booking commerce
-**Current milestone:** 4.1 complete (public booking engine)
+**Current milestone:** 4.2 complete (guest portal)
 
 ## Phase 4 plan
 
 | Milestone | Scope | Status |
 |---|---|---|
 | 4.1 | Public booking engine per property: availability and prices for online rates, request or instant booking, expiring holds, automatic confirmation email, staff settings | ✅ Done |
-| 4.2 | Guest portal: view and manage a booking with a secure link (no account), pre-arrival details | Planned |
+| 4.2 | Guest portal: secret link per booking (email and WhatsApp), booking, invoices and balance, arrival details, cancellation requests | ✅ Done |
 | 4.3 | Payment gateway adapter (provider to be chosen): deposits on the booking engine, webhook idempotency, reconciliation with ADR-0010 payments | Blocked on provider choice |
 | 4.4 | Property branding (logo, photos) with S3-compatible storage; automatic confirmations for staff bookings | Planned |
+
+## Phase 4.2 acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| A link opens exactly one booking; only the token's hash is stored; bad, revoked and expired links are refused alike | ✅ Tested |
+| The guest sees dates, rooms, total, issued invoices with paid and balance, contact details and terms, and no staff data | ✅ Tested |
+| Arrival time and message reach staff as "From the guest"; a cancellation request is flagged, not applied; staff can keep the booking | ✅ Tested (API and E2E) |
+| Cancelled bookings stay visible but cannot be changed | ✅ Tested |
+| Confirmation emails (staff and website) carry a working link; staff can share by copy or WhatsApp and withdraw all links | ✅ Tested |
+| Works on a phone without horizontal scrolling; private page is not indexed and sends no referrer | ✅ Tested (E2E at 390 px) and screenshot |
+
+## Test results (milestone 4.2)
+
+- Backend: **166 passed, 0 failed** (6 new). Lint, types, migration round trip clean.
+- Frontend unit and component: **17 passed**. End-to-end: **34 passed** (new: share a guest link, guest sends arrival details and asks to cancel on a phone, staff see both and keep the booking, withdrawn link stops working).
+- Not yet done: paying the balance online from the portal (4.3, gateway), guest-initiated date changes, documents (ID, signed registration card).
 
 ## Phase 4.1 acceptance criteria
 
@@ -278,5 +295,5 @@ See `docs/SECURITY.md` → Known gaps. Main items: no MFA, no password reset, no
 
 ## Next
 
-1. Milestone 4.2: guest portal (secure link per booking).
+1. Milestone 4.3 once a gateway is chosen (DPO Pay recommended); otherwise 4.4 property photos and branding.
 2. Decisions needed from the product owner: email provider (any with SMTP), payment gateway for Namibia/Zimbabwe, and whether invoice numbering should be per property (separate legal entities) or per organisation (current).

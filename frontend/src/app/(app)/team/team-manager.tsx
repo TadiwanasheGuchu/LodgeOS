@@ -318,7 +318,7 @@ function InviteDialog({
   return (
     <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
       <DialogContent title="Invite someone" description="You will get a link to send them. It works once and expires after 7 days.">
-        <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+        <form method="post" onSubmit={submit} noValidate className="flex flex-col gap-4">
           {error ? <Alert tone="error">{error}</Alert> : null}
           <Field id="invite-name" label="Name">
             <Input id="invite-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />
@@ -419,7 +419,7 @@ function AddRoleDialog({
   return (
     <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
       <DialogContent title={`Add a role for ${member.full_name}`}>
-        <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+        <form method="post" onSubmit={submit} noValidate className="flex flex-col gap-4">
           {error ? <Alert tone="error">{error}</Alert> : null}
           <RoleAndProperty roles={roles} properties={properties} roleId={roleId} propertyId={propertyId} onRole={setRoleId} onProperty={setPropertyId} />
           <div className="border-t border-line pt-4">

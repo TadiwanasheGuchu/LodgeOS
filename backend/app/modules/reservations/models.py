@@ -117,6 +117,12 @@ class Reservation(TimestampMixin, Base):
     hold_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Set by public bookings so a double submit creates one booking.
     idempotency_key: Mapped[str | None] = mapped_column(String(64))
+    # From the guest portal (ADR-0013).
+    guest_arrival_time: Mapped[str | None] = mapped_column(String(5))  # "HH:MM", local
+    guest_message: Mapped[str | None] = mapped_column(Text)
+    guest_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancellation_requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancellation_request_reason: Mapped[str | None] = mapped_column(String(1000))
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT")
     )

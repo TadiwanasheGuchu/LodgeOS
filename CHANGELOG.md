@@ -4,7 +4,14 @@ All notable changes are recorded here. Format based on [Keep a Changelog](https:
 
 ## [Unreleased]
 
+### Fixed
+- Security: a form sent before the page's scripts had loaded (likely on slow connections) was submitted by the browser as a GET, putting the sign-in email and password, or other form fields, in the URL and so in browser history and server logs. Every form now falls back to POST; an end-to-end test covers sign-in with scripts disabled.
+
+### Changed
+- End-to-end tests in CI: no automatic retries (the ordered specs share data, so a retry re-created records and hid the first failure); screenshots and error context of failed tests are kept as a CI artifact; the API's request log is shown in the CI output.
+
 ### Added
+- Guest portal (ADR-0013): a private link per booking (in confirmation emails, or shared by staff by copy or WhatsApp) where guests see their booking, invoices and balance, send arrival time and a message, and ask to cancel. Staff see "From the guest" and a cancellation-request banner, and can withdraw links. Only token hashes are stored.
 - Public booking engine (ADR-0012): a booking page per property (`/book/{organisation}/{property}`), built for phones, with availability and prices for rates marked "sell online", request or instant booking, holds that expire, automatic confirmation email, rate limits and a honeypot. Staff "Online booking" tab: go live, terms, description, booking window, hold time and which rates are sold online. The worker (`run-worker`) now also expires holds.
 - Email notifications (ADR-0011): "Email confirmation" on bookings, "Email invoice" on issued invoices and "Email receipt" on payments, queued in an outbox and delivered by a worker (`deliver-notifications`, `worker` Compose service) with retries. Mock provider by default (clearly labelled test mode), standard SMTP adapter for any provider. Sent-email history with delivery status on each booking and invoice.
 - Payments (ADR-0010): deposits on bookings, payments against invoices (allocated up to the balance, rest on account), applying deposits to invoices, refunds (including releasing an overpayment after a credit note), reversal of payments recorded in error, balance due on invoices, a payments panel on each booking, and a daily cash-up page by method. Idempotency keys prevent double recording; payments, allocations and refunds are protected by database triggers and privileges. New permissions `payments.view`, `payments.manage`, `payments.refund`.

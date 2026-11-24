@@ -185,6 +185,12 @@ async def _detail(db: DB, reservation: Reservation) -> ReservationDetail:
         tax_amount=reservation.tax_amount,
         notes=reservation.notes,
         cancellation_reason=reservation.cancellation_reason,
+        hold_expires_at=reservation.hold_expires_at,
+        guest_arrival_time=reservation.guest_arrival_time,
+        guest_message=reservation.guest_message,
+        guest_updated_at=reservation.guest_updated_at,
+        cancellation_requested_at=reservation.cancellation_requested_at,
+        cancellation_request_reason=reservation.cancellation_request_reason,
         guest=GuestOut.model_validate(guest),
         rooms=[
             ReservationRoomOut(

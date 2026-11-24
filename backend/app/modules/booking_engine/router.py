@@ -23,6 +23,7 @@ from app.modules.booking_engine.schemas import (
     PublicRoomType,
     RoomTypeOffers,
 )
+from app.modules.guest_portal import service as guest_links
 from app.modules.guests.models import Guest
 from app.modules.notifications import service as notifications
 from app.modules.notifications import templates
@@ -340,6 +341,7 @@ async def book(
         ip_address=client_ip(request),
     )
     out = await _public_out(db, reservation, guest)
+    manage_url, _ = await guest_links.create_link(db, reservation, user_id=None)
     await notifications.queue(
         db,
         prop=prop,
@@ -348,6 +350,7 @@ async def book(
         subject_id=reservation.id,
         recipient=out.email,
         rendered=templates.booking_confirmation(
+            manage_url=manage_url,
             venue=notifications.venue_of(prop),
             guest_name=out.guest_name,
             reference=out.reference,

@@ -143,7 +143,7 @@ export function OnlineBookingSettings({
         )}
       </section>
 
-      <form onSubmit={save} noValidate className="flex flex-col gap-5 rounded-lg border border-line bg-white px-5 py-5 sm:px-6">
+      <form method="post" onSubmit={save} noValidate className="flex flex-col gap-5 rounded-lg border border-line bg-white px-5 py-5 sm:px-6">
         {result ? <Alert tone={result.tone}>{result.message}</Alert> : null}
         <label className="flex items-start gap-3 text-sm">
           <input type="checkbox" className="mt-0.5 size-4 accent-forest" checked={enabled} disabled={!canManage} onChange={(e) => setEnabled(e.target.checked)} />

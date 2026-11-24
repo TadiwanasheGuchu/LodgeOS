@@ -38,7 +38,7 @@ export function SignInForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-8 flex flex-col gap-5">
+    <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate className="mt-8 flex flex-col gap-5">
       {formError ? <Alert tone="error">{formError}</Alert> : null}
       <Field id="email" label="Email" error={errors.email?.message}>
         <Input

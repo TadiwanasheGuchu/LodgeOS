@@ -199,6 +199,21 @@ No sign-in (ADR-0012). `{org}` and `{property}` are slugs; a property that is no
 
 Staff settings: `PATCH /api/v1/properties/{id}` accepts `booking_engine_enabled` (needs `booking_terms`), `booking_mode` (`request`, `instant`), `public_description`, `booking_terms`, `min_lead_days`, `max_advance_days`, `request_hold_hours`. `PATCH /api/v1/rate-plans/{id}` accepts `sell_online`.
 
+## Endpoints (Phase 4.2): guest portal
+
+The token is the secret part of a guest link (ADR-0013); only its SHA-256 is stored. Unknown, revoked or expired tokens return 404 "This link has expired or was withdrawn." Portal requests are limited to 60 per minute per IP and guest changes to 10 per hour per booking.
+
+| Method | Path | Permission | Description |
+|---|---|---|---|
+| GET | `/api/v1/stay/{token}` | link | Booking, rooms, total, issued invoices with paid and balance, amount paid, property contact and terms, guest's arrival details, whether a cancellation was requested, whether changes are still possible |
+| POST | `/api/v1/stay/{token}/arrival` | link | `{arrival_time? "HH:MM", message?}` while provisional, confirmed or checked in |
+| POST | `/api/v1/stay/{token}/cancellation-request` | link | `{reason}`: flags the booking for staff; does not cancel |
+| POST | `/api/v1/reservations/{id}/guest-links` | `reservations.manage` | New link `{url, expires_at}` (30 days after check-out); the token is returned once |
+| POST | `/api/v1/reservations/{id}/guest-links/revoke` | `reservations.manage` | Withdraw every link of the booking |
+| POST | `/api/v1/reservations/{id}/cancellation-request/dismiss` | `reservations.manage` | Clear the guest's request after deciding to keep the booking |
+
+Booking confirmation emails now include a "View or update your booking" link. `GET /api/v1/reservations/{id}` adds `hold_expires_at`, `guest_arrival_time`, `guest_message`, `guest_updated_at`, `cancellation_requested_at`, `cancellation_request_reason`.
+
 ## Role permissions
 
 Defaults of the six system roles (organisation-wide grants). A role granted for one property applies its `properties.*`, `rooms.*`, `rates.*`, `reservations.*`, `invoices.*` and `payments.*` permissions to that property only.

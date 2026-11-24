@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     # Comma-separated list of origins allowed to call the API with credentials.
     cors_allowed_origins: str = "http://localhost:3000"
 
+    # Where guests open links from emails (booking pages, guest portal).
+    public_base_url: str = "http://localhost:3000"
+
     # Email (ADR-0011). "mock" records messages without sending; production needs "smtp".
     email_provider: Literal["mock", "smtp"] = "mock"
     email_from_address: str = "bookings@lodgeos.local"

@@ -62,7 +62,7 @@ function SendDialog({ url, title, description, onClose, onDone }: { url: string;
   return (
     <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent title={title} description={description}>
-        <form
+        <form method="post"
           noValidate
           className="flex flex-col gap-4"
           onSubmit={async (e) => {

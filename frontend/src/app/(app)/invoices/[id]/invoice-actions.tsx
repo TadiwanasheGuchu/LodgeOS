@@ -163,7 +163,7 @@ function LineDialog({ invoice, taxes, onClose, onDone }: { invoice: Invoice; tax
   return (
     <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent title="Add a line" description="Meals, drinks, activities, transfers or other charges.">
-        <form
+        <form method="post"
           noValidate
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -234,7 +234,7 @@ function DetailsDialog({ invoice, onClose, onDone }: { invoice: Invoice; onClose
   return (
     <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent title="Bill-to and notes">
-        <form
+        <form method="post"
           noValidate
           className="flex flex-col gap-4"
           onSubmit={(e) => {
@@ -293,7 +293,7 @@ function CreditDialog({ invoice, onClose, onDone }: { invoice: Invoice; onClose:
   return (
     <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent title={`Credit note for ${invoice.number}`} description="Enter how much to credit on each line. Leave a line empty to credit nothing on it.">
-        <form
+        <form method="post"
           noValidate
           className="flex flex-col gap-4"
           onSubmit={(e) => {

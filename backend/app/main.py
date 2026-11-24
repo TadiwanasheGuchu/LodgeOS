@@ -16,6 +16,7 @@ from app.modules.access.invitations import router as invitations_router
 from app.modules.access.router import router as access_router
 from app.modules.auth.router import router as auth_router
 from app.modules.booking_engine.router import router as booking_engine_router
+from app.modules.guest_portal.router import router as guest_portal_router
 from app.modules.housekeeping.router import router as housekeeping_router
 from app.modules.invoicing.router import router as invoicing_router
 from app.modules.maintenance.router import router as maintenance_router
@@ -105,6 +106,7 @@ def create_app() -> FastAPI:
     app.include_router(payments_router)
     app.include_router(notifications_router)
     app.include_router(booking_engine_router)
+    app.include_router(guest_portal_router)
     return app
 
 

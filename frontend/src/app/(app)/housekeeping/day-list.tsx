@@ -202,7 +202,7 @@ function DeclineDialog({ room, onClose, onSave }: { room: HousekeepingRoom; onCl
   return (
     <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent title={`Room ${room.number}: service declined`} description="The room stays on today's record as not serviced.">
-        <form
+        <form method="post"
           className="flex flex-col gap-4"
           onSubmit={async (e) => {
             e.preventDefault();

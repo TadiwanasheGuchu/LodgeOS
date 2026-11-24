@@ -222,6 +222,12 @@ All use tenant RLS (ADR-0010).
 - `notifications.created_by` may be empty (system-queued messages).
 - Functions `public_booking_property(org_slug, property_slug)` and `expired_request_holds()`: `SECURITY DEFINER`, `search_path` pinned, return ids only, `EXECUTE` granted to `lodgeos_app` only (ADR-0012).
 
+## Changes (Phase 4.2)
+
+- `guest_access_tokens`: `reservation_id` (composite FK with property), `token_hash` (SHA-256, UNIQUE), `created_at`, `expires_at`, `revoked_at`, `created_by` (empty when system-created). Tenant RLS.
+- `reservations`: `guest_arrival_time` (CHECK `HH:MM`), `guest_message`, `guest_updated_at`, `cancellation_requested_at`, `cancellation_request_reason`.
+- Function `guest_portal_access(hash)`: `SECURITY DEFINER`, returns organisation and reservation ids for a valid, unrevoked, unexpired token only.
+
 ## Planned tables
 
 Next (Phase 4): booking-engine sessions, guest portal access tokens, payment-gateway events (`integration_events`).
